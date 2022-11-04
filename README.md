@@ -17,11 +17,15 @@ and all their respective dependencies.
 The following functions are used to wrap FTD2XX and LALUsb functions 
 and communicate with the board. 
 
-#### bool CITIROC_printInfo(char* serialNumber);
-#### bool CITIROC_testParameters();
-#### bool CITIROC_initializeBoard(int* usbId);
-#### bool CITIROC_sendWord(int usbID, const char subAddress, const byte* binary);
-#### bool CITIROC_readWord(int usbID, char subAddress, byte* word, const int wordCount);
-#### bool CITIROC_enableDAQ(int usbID);
-#### bool CITIROC_disableDAQ(int usbID);
+`bool CITIROC_printInfo(char* serialNumber);`
+
+`bool CITIROC_initializeBoard(int* usbId);`
+
+`bool CITIROC_sendWord(int usbID, char subAddress, byte* binary);`
+
+`bool CITIROC_readWord(int usbID, char subAddress, byte* word, int wordCount);`
+
+`bool CITIROC_enableDAQ(int usbID);`
+
+`bool CITIROC_disableDAQ(int usbID);`
 

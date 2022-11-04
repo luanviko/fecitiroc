@@ -37,24 +37,20 @@ by setting timeouts, buffer size, temperature settings, etc.
 Returns `:usbId`:
 
 
-`bool CITIROC_sendWord(int usbID, char subAddress, byte* binary):`
-
+* `bool CITIROC_sendWord(int usbID, char subAddress, byte* binary):`
 Send a 1-byte word (e.g., `10000000`) to a register of given sub address on the FPGA's memory.
 `:binary:` is a `byte`, define as an `unsigned char`.
 
 
-`bool CITIROC_readWord(int usbID, char subAddress, byte* word, int wordCount):`
-
+* `bool CITIROC_readWord(int usbID, char subAddress, byte* word, int wordCount):`
 Returns array `:word:` and its size `:wordCount:` from `:subAddress:` at the FPGA's memory. 
 
 
-`bool CITIROC_enableDAQ(int usbID):`
-
+* `bool CITIROC_enableDAQ(int usbID):`
 Sends a word to the correct subaddress to start data-aquisition mode.
 
 
-`bool CITIROC_disableDAQ(int usbID):`
-
+* `bool CITIROC_disableDAQ(int usbID):`
 Sends a word to the correct subaddress to stop data-aquisition mode.
 
 

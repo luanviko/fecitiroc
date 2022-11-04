@@ -12,5 +12,5 @@ This frontend requires the installation of the following frameworks/ libraries/ 
 
 and all their respective dependencies. 
 
-## `CITIROC` API wrapper
+## CITIROC API wrapper
 

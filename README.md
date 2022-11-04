@@ -28,7 +28,7 @@ Tries to connect with the board by using the `:serialNumber:`.
 Returns `:usbId:`
 
 
-*`bool CITIROC_initializeBoard(int* usbId):`\
+* `bool CITIROC_initializeBoard(int* usbId):`\
 Initializes the board 
 by setting timeouts, buffer size, temperature settings, etc.
 Returns `:usbId`:

@@ -14,3 +14,11 @@ and all their respective dependencies.
 
 ## CITIROC API wrapper
 
+The following functions are used to wrap FTD2XX and LALUsb functions 
+and communicate with the board. 
+
+#### CITIROC_sendWord()
+#### CITIROC_readWord();
+#### CITIROC_enableDAQ();
+#### CITIROC_disableDAQ();
+

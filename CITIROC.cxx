@@ -26,6 +26,10 @@ bool CITIROC_testParameters(){
     return true;
 }
 
+bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId){
+    return true;
+}
+
 bool CITIROC_initializeBoard(int* CITIROC_usbId, char* CITIROC_serialNumber) {
     /* Looks for the register parameters in ODB
     then changes parameters in the board using CITIROC_sendWord 

@@ -26,6 +26,7 @@ bool another_test(){return false;};
 // Public methods/ functions
 bool CITIROC_printInfo(char* CITIROC_serialNumber);
 bool CITIROC_testParameters();
+bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId);
 bool CITIROC_initializeBoard(int* CITIROC_usbId);
 bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const byte* binary);
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount);

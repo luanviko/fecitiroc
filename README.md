@@ -21,9 +21,11 @@ and communicate with the board.
 Returns basic information about the board, 
 such as serial number.
 
+`bool CITIROC_connectBoard(char* serialNumber, int*usbId):`
+
 `bool CITIROC_initializeBoard(int* usbId):`
-Initializes the board, 
-by setting timeouts, buffer size, temperature controls, etc.
+Initializes the board 
+by setting timeouts, buffer size, temperature settings, etc.
 Returns `:usbId`:
 
 `bool CITIROC_sendWord(int usbID, char subAddress, byte* binary):`

@@ -24,51 +24,23 @@ extern const char odbdir_DAQ[1024]  = "/Equipment/Citiroc1A_DAQ";
 extern const char odbdir_HV[1024]   = "/Equipment/Citiroc1A_HV";
 extern const char odbdir_temp[1024] = "/Equipment/Citiroc1A_Slow/Temperature";
 
-bool another_test(){return false;};
+// Parameter names at ODB directories
+const char odb_temp_enable  = "Enable temperature sensor";
+const char odb_temp_configa = "Temp.-sensor configuration a";
+const char odb_temp_configb = "Temp.-sensor configuration b";
+const char odb_txsize = "FIFO write size";
+const char odb_rxsize = "FIFO read size";
 
 // Public methods/ functions
 bool CITIROC_printInfo(char* CITIROC_serialNumber);
-bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId);
-bool CITIROC_initializeBoard(int* CITIROC_usbId);
+bool CITIROC_connect(char* CITIROC_serialNumber, int* usbId);
+bool CITIROC_initialize(const int CITIROC_usbId);
+bool CITIROC_reset(const int CITIROC_usbId);
+bool CITIROC_disconnet(const int CITIROC_usbID);
 bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const byte* binary);
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount);
 bool CITIROC_enableDAQ(const int CITIROC_usbID);
 bool CITIROC_disableDAQ(const int CITIROC_usbID);
-bool CITIROC_disconnetBoard(const int* CITIROC_usbID);
 
-bool CITIROC_testParameters(){
-
-     // Variables
-    bool usbStatus;
-    midas::odb daq_parameters(odbdir_DAQ);
-    midas::odb temp_parameters(odbdir_temp);
-
-    // Testing odb variables
-    printf("txsize, rxsize: %i, %i\n", (int)daq_parameters["FIFO write size"], (int)daq_parameters["FIFO read size"]);
-
-    return true;
-}
-
-bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* CITIROC_usbID) {
-    /**
-    * Tries to open the board and, 
-    * if succesful, pass the usb id by reference.
-    * @param CITIROC_serialNumber 
-    * @param CITIROC_usbID
-    * @return true if CITIROC_usbID > 0
-    */
-    printf("Generating FTD2XX device list...");
-    int FT_numberOfDevices;
-    FT_STATUS status = FT_CreateDeviceInfoList(&FT_numberOfDevices);
-    if (status != FT_OK){return false;}
-    int numberOfUsbDevices = USB_GetNumberOfDevs();
-    int usbID = OpenUsbDevice(CITIROC_serialNumber);
-    if (usbID > 0) {CITIROC_usbID = usbID; return true;} 
-    else {return false;}
-}
-
-bool CITIROC_disconnetBoard(const int* CITIROC_usbID) {
-    CloseUsbDevice(CITIROC_usbID);
-}
 
 #endif 

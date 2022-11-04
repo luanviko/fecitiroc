@@ -8,7 +8,7 @@ This frontend requires the installation of the following frameworks/ libraries/ 
 * [ROOT framework](https://root.cern/install/),
 * [MIDAS framework](https://daq00.triumf.ca/MidasWiki/index.php/Main_Page),
 * [FTD2XX drivers](https://ftdichip.com/drivers/d2xx-drivers/),
-* [LALUsb library](http://lalusb.free.fr/software.html)
+* [LALUsb library](http://lalusb.free.fr/software.html),
 
 and all their respective dependencies. 
 
@@ -51,3 +51,20 @@ Sends a word to the correct subaddress to stop data-aquisition mode.
 
 
 ## Using odbxx
+
+You can use obxx objects to inialize
+the data-acquisition and slow-control parameters
+on the online database. For example,
+```c++
+  midas::odb database_daq = {{"DAC 00", 15}};
+  database_daq.connect("/Equipment/CITIROC1A_DAQ");
+```
+will first initiate a variable of name `DAC 00` and set it to `15`, then add this variable to the directory `"/Equipment/CITIROC1A_DAQ"` on the online database.
+
+To access the values you add to the online database, 
+you can simply create a dicitionary with the parameters
+```c++
+  midas::odb parameters("/Equipment/CITIROC1A_DAQ");
+  int DAC00 = (int)parameters["DAC 00"];
+```
+and access the variable values by their key.

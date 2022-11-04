@@ -278,13 +278,12 @@ INT frontend_init()
   int size, status;
   char set_str[80];
   CAEN_DGTZ_BoardInfo_t       BoardInfo;
+  bool CITIROC_status;
   
   // Testing odbxx 
   initialize_slow_control();
   initialize_daq_parameters();
   initialize_HV_parameters();
-  // another_test();
-  CITIROC_testParameters();
 
   // Suppress watchdog for PICe for nowma
   cm_set_watchdog_params(FALSE, 0);
@@ -299,6 +298,15 @@ INT frontend_init()
   // status = db_create_record(hDB, 0, set_str, strcomb(dt5743_config_settings_str)); <<---- CAEN
   status = db_find_key (hDB, 0, set_str, &hSet[0]);
   if (status != DB_SUCCESS) cm_msg(MINFO,"FE","Key %s not found", set_str);
+
+
+  // Open communication and initialize board
+  printf("Opening communication...\n");
+  CITIROC_status = CITIROC_connectBoard("CT1A_31A", &CITIROC_usbID);
+
+  printf("Closing communication...\n");
+  CITIROC_status = CITIROC_disconnetBoard(&CITIROC_usbID);
+
 
   /* Enable hot-link on settings/ of the equipment */
   // size = sizeof(DT5743_CONFIG_SETTINGS);
@@ -489,10 +497,6 @@ INT begin_of_run(INT run_number, char *error)
 {
 
   // Update values 
-  // begin_of_run():
-  midas::odb daq_parameters("/Equipment/Citiroc1A");
-  printf("Reading from database: DAC00 = \\0x%x\n", (int)daq_parameters["DAC00"]);
-
   initialize_for_run();
 
   //------ FINAL ACTIONS before BOR -----------

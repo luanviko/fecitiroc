@@ -13,22 +13,9 @@ bool CITIROC_printInfo(char* CITIROC_serialNumber) {
     return true;
 }
 
-bool CITIROC_testParameters(){
-
-     // Variables
-    bool usbStatus;
-    midas::odb daq_parameters(odbdir_DAQ);
-    midas::odb temp_parameters(odbdir_temp);
-
-    // Testing odb variables
-    printf("txsize, rxsize: %i, %i\n", (int)daq_parameters["FIFO write size"], (int)daq_parameters["FIFO read size"]);
-
-    return true;
-}
-
-bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId){
-    return true;
-}
+// bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId){
+//     return true;
+// }
 
 bool CITIROC_initializeBoard(int* CITIROC_usbId, char* CITIROC_serialNumber) {
     /* Looks for the register parameters in ODB

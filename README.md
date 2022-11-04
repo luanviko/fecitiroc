@@ -5,10 +5,10 @@ A MIDAS frontend for the WEEROC CITIROC1A evaluation board.
 
 This frontend requires the installation of the following frameworks/ libraries/ drivers:
 
-* ROOT
-* MIDAS
+* (ROOT framework)[https://root.cern/install/],
+* MIDAS framework
 * FTD2XX drivers
-* LALUsb
+* LALUsb library
 
 and all their respective dependencies. 
 

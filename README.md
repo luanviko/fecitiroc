@@ -17,15 +17,22 @@ and all their respective dependencies.
 The following functions are used to wrap FTD2XX and LALUsb functions 
 and communicate with the board. 
 
-`bool CITIROC_printInfo(char* serialNumber);`
+`bool CITIROC_printInfo(char* serialNumber):`
+Returns basic information about the board, 
+such as serial number.
 
-`bool CITIROC_initializeBoard(int* usbId);`
+`bool CITIROC_initializeBoard(int* usbId):`
+Initializes the board, 
+by setting timeouts, buffer size, temperature controls, etc.
+Returns `:usbId`:
 
-`bool CITIROC_sendWord(int usbID, char subAddress, byte* binary);`
+`bool CITIROC_sendWord(int usbID, char subAddress, byte* binary):`
+Send a 1-byte word (e.g., `10000000`) to a register of given sub address on the FPGA's memory.
+`:binary:` is a `byte`, define as an `unsigned char`.
 
-`bool CITIROC_readWord(int usbID, char subAddress, byte* word, int wordCount);`
+`bool CITIROC_readWord(int usbID, char subAddress, byte* word, int wordCount):`
 
-`bool CITIROC_enableDAQ(int usbID);`
+`bool CITIROC_enableDAQ(int usbID):`
 
-`bool CITIROC_disableDAQ(int usbID);`
+`bool CITIROC_disableDAQ(int usbID):`
 

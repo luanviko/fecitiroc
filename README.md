@@ -3,7 +3,7 @@ A MIDAS frontend for the WEEROC CITIROC1A evaluation board.
 
 ## Dependencies
 
-The Makefile is thought around Linux system and it was tested under Ubuntu 20.04, 
+The Makefile is thought around Linux systems and it was tested under Ubuntu 20.04, 
 Ubuntu 22.04 and Fedora 32. 
 
 This frontend requires the installation of the following frameworks/ libraries/ drivers:

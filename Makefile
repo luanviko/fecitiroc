@@ -33,12 +33,12 @@ endif
 
 OS_DIR = linux-m64
 OSFLAGS = -DOS_LINUX
-CFLAGS = -g -O2 -Wall -fpermissive
-LIBS = -lm -lz -lutil -lnsl -lpthread -lrt
+CFLAGS = -g -O2 -Wall -fpermissive -ldl 
+LIBS = -lm -lz -lutil -lnsl -lpthread -lrt 
 #endif
 
 # CAEN libs
-LIBS +=  -lCAENComm -lCAENDigitizer -lftd2xx -llalusb20 -lm -lpthread -Wl,-V
+LIBS +=  -lCAENComm -lCAENDigitizer -lftd2xx -llalusb20 -lm -lpthread #-Wl,-V -w
 
 #-----------------------
 # MacOSX/Darwin is just a funny Linux
@@ -51,7 +51,7 @@ ifeq ($(OSTYPE),darwin)
 OS_DIR = darwin
 FF = cc
 OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -DAbsoftUNIXFortran -fPIC -Wno-unused-function
-LIBS = -lpthread -lrt
+LIBS = -lpthread -lrt 
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_STRLCPY=
 NEED_RANLIB=1
@@ -110,18 +110,10 @@ INCS = -I. -I$(MIDAS_INC) -I$(MIDAS_DRV)
 all: $(UFE).exe  
 
 
-$(UFE).exe: $(LIB) $(MIDAS_LIB)/mfe.o $(DRIVERS) $(UFE).o ./CITIROC.o
-	$(CXX) $(CFLAGS) $(OSFLAGS) $(INCS) -o $(UFE).exe $(UFE).o $(DRIVERS) \
-	$(MIDAS_LIB)/mfe.o $(LIBMIDAS) $(LIBS)
-
-CITIROC.o: CITIROC.cxx
-	$(CXX) $(CFLAGS) $(INCS) $(OSFLAGS) -o $@ -c $<
-
-fecitiroc.o: fecitiroc.cxx
-	$(CXX) $(CFLAGS) $(INCS) $(OSFLAGS) -o $@ -c $<
-
-$(MIDAS_LIB)/mfe.o:
-	@cd $(MIDASSYS) && make
+$(UFE).exe:
+	$(CXX) ./fecitiroc.cxx ./CITIROC.cxx $(CFLAGS) $(OSFLAGS) \
+	$(INCS) $(DRIVERS) \
+	$(MIDAS_LIB)/mfe.o $(LIBMIDAS) $(LIBS) -o $(UFE).exe
 
 clean::
 	rm -f *.exe *.o *~ \#*

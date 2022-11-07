@@ -1,22 +1,5 @@
 /* API wrapper to interface MIDAS with CITIROC1A*/
-
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <stdbool.h>
-// #include <unistd.h>
-// #include "odbxx.h"
-// #include "ftd2xx.h"
-// #include "LALUsb.h"
 #include "CITIROC.h"
-
-bool CITIROC_printInfo(char* CITIROC_serialNumber) {
-    return true;
-}
-
-// bool CITIROC_connectBoard(char* CITIROC_serialNumber, int* usbId){
-//     return true;
-// }
-
 
 
 bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID) {
@@ -107,7 +90,7 @@ bool CITIROC_enableDAQ(const int CITIROC_usbID) {
      * @param CITIROC_usbID
      * @return true if usbStatus succesful.
      */
-    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", &daqON);
+    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", "10000000");
     if (usbStatus) {return true;} else {return false;}
 }
 
@@ -117,7 +100,7 @@ bool CITIROC_disableDAQ(const int CITIROC_usbID) {
      * @param CITIROC_usbID
      * @return true if usbStatus succesful.
      */
-    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", &daqOFF);
+    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", "00000000");
     if (usbStatus) {return true;} else {return false;}
 }
 
@@ -137,7 +120,3 @@ bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word
     int realCount = UsbRd(CITIROC_usbID, subAddress, word, wordCount);
     if (realCount <= 0) {return false;} else {return true;}
 }
-
-
-
-

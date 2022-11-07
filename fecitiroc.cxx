@@ -20,12 +20,14 @@ L. Koerich, Nov 2022
 #include "unistd.h"
 #include "time.h"
 #include "sys/time.h"
-#include "CITIROC.h"
+
 
 #include "OdbDT5743.h"
 
 // CAEN includes
 #include <CAENDigitizer.h>
+
+#include "CITIROC.h"
 
 #define  EQ_NAME   "V1743"
 #define  EQ_EVID   1
@@ -45,6 +47,8 @@ DT5743_CONFIG_SETTINGS tsvc[N_DT5743];
 //const char BankName[N_DT5743][5]={"D743"};
 const char BankName[N_DT5743][5]={"43FS"};
 const char BankNameSlow[N_DT5743][5]={"43SL"};
+
+// extern int CITIROC_usbID;
 
 // VMEIO definition
 
@@ -302,10 +306,10 @@ INT frontend_init()
 
   // Open communication and initialize board
   printf("Opening communication...\n");
-  CITIROC_status = CITIROC_connectBoard("CT1A_31A", &CITIROC_usbID);
+  CITIROC_status = CITIROC_connect("CT1A_31A", &CITIROC_usbID);
 
   printf("Closing communication...\n");
-  CITIROC_status = CITIROC_disconnetBoard(&CITIROC_usbID);
+  CITIROC_status = CITIROC_disconnet(&CITIROC_usbID);
 
 
   /* Enable hot-link on settings/ of the equipment */

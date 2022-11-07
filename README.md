@@ -3,6 +3,9 @@ A MIDAS frontend for the WEEROC CITIROC1A evaluation board.
 
 ## Dependencies
 
+The Makefile is thought around Linux system and it was tested under Ubuntu 20.04, 
+Ubuntu 22.04 and Fedora 32. 
+
 This frontend requires the installation of the following frameworks/ libraries/ drivers:
 
 * [ROOT framework](https://root.cern/install/),
@@ -11,6 +14,9 @@ This frontend requires the installation of the following frameworks/ libraries/ 
 * [LALUsb library](http://lalusb.free.fr/software.html),
 
 and all their respective dependencies. 
+
+You may have to create a symbolic link or copy $MIDASSYS/mxml/mxml.h
+to your clone directory. 
 
 ## CITIROC API wrapper
 

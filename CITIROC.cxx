@@ -20,12 +20,16 @@ bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID) {
     else {return false;}
 }
 
-bool CITIROC_initialize(const int CITIROC_usbId, char* CITIROC_serialNumber) {
-    /* Looks for the register parameters in ODB
-    then changes parameters in the board using CITIROC_sendWord 
-    or other LALUsb functions.*/
+bool CITIROC_initialize(const int CITIROC_usbId) {
+    /**
+     * Looks for the right parameters at ODB and 
+     * writes such parameters on the board registers. 
+     * Run this before trying data acquisition.
+     * @param  CITIROC_usbId: usb id for the board.
+     * @return true if all the writings are done correctly. 
+     */
 
-    // Variables
+    // Variables from odb.
     bool usbStatus;
     midas::odb daq_parameters(odbdir_DAQ);
     midas::odb temp_parameters(odbdir_temp);
@@ -34,30 +38,27 @@ bool CITIROC_initialize(const int CITIROC_usbId, char* CITIROC_serialNumber) {
     int ttimeout = (int)daq_parameters["Write time out (1-255 ms)"];
     int rtimeout = (int)daq_parameters["Read time out (1-255 ms)"];
 
-    // // Testing odb variables
-    // printf("txsize, rxsize: %i, %i\n", (int)daq_parameters["FIFO write size"], (int)daq_parameters["FIFO read size"]);
-
     printf("Initializing board...\n");
     usbStatus = USB_Init(CITIROC_usbId, true);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
     printf("Setting buffer sizes to (FIFO write size, FIFO read size): %i, %i\n", txsize, rxsize);
     usbStatus = USB_SetXferSize(CITIROC_usbId, rxsize, txsize);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
-    printf("Setting timeout values...\n");    
+    printf("Setting timeout values to (write timeout, read timeout): %i, %i\n", ttimeout, rtimeout);    
     usbStatus = USB_SetTimeouts(CITIROC_usbId, ttimeout, rtimeout);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
     
     printf("Enabling temperature sensors...\n");
     usbStatus = CITIROC_sendWord(CITIROC_usbId, 63, (byte)temp_parameters[odb_temp_enable]);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
     printf("Setting temperature configurations...");
     usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, (byte)temp_parameters[odb_temp_configa]);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
     usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, (byte)temp_parameters[odb_temp_configb]);
-    if (usbStatus == false) { return false; }
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
     return true;
 }

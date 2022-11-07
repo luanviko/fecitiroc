@@ -36,6 +36,4 @@ bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word
 bool CITIROC_enableDAQ(const int CITIROC_usbID);
 bool CITIROC_disableDAQ(const int CITIROC_usbID);
 
-
-
 #endif 

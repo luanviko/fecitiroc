@@ -1,7 +1,6 @@
 /* API wrapper to interface MIDAS with CITIROC1A*/
 #include "CITIROC.h"
 
-
 bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID) {
     /**
      * Tries to open the board and, 
@@ -120,4 +119,14 @@ bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word
     :wordCount: must be equal to :realCount: */
     int realCount = UsbRd(CITIROC_usbID, subAddress, word, wordCount);
     if (realCount <= 0) {return false;} else {return true;}
+}
+
+bool CITIROC_testParameters(const int CITIROC_usbID){ 
+
+    return true;
+}
+
+bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount) {
+    
+    return true;
 }

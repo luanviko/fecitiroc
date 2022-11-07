@@ -9,12 +9,11 @@
 #include "LALUsb.h"
 #include "odbxx.h"
 
-
 // Byte -> 8 bits -> unsigned char.
 typedef unsigned char byte;
 
 // To be used both here and at fecitiroc.cxx
-const int CITIROC_usbID;
+const char* CITIROC_serialNumber = "CT1A_31A";
 const char odbdir_DAQ[1024]  = "/Equipment/Citiroc1A_DAQ";
 const char odbdir_HV[1024]   = "/Equipment/Citiroc1A_HV";
 const char odbdir_temp[1024] = "/Equipment/Citiroc1A_Slow/Temperature";
@@ -35,5 +34,6 @@ bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const byte
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount);
 bool CITIROC_enableDAQ(const int CITIROC_usbID);
 bool CITIROC_disableDAQ(const int CITIROC_usbID);
+bool CITIROC_testParameters(const int CITIROC_usbID);
 
 #endif 

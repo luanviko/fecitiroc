@@ -37,6 +37,8 @@ L. Koerich, Nov 2022
 
 /* Globals */
 #define N_DT5743 1
+bool CITIROC_status;
+int CITIROC_usbID;
 
 /* Hardware */
 extern HNDLE hDB;
@@ -282,7 +284,6 @@ INT frontend_init()
   int size, status;
   char set_str[80];
   CAEN_DGTZ_BoardInfo_t       BoardInfo;
-  bool CITIROC_status;
   
   // Testing odbxx 
   initialize_slow_control();
@@ -303,45 +304,21 @@ INT frontend_init()
   status = db_find_key (hDB, 0, set_str, &hSet[0]);
   if (status != DB_SUCCESS) cm_msg(MINFO,"FE","Key %s not found", set_str);
 
-
   // Open communication and initialize board
   printf("Opening communication...\n");
-  CITIROC_status = CITIROC_connect("CT1A_31A", &CITIROC_usbID);
+  CITIROC_status = CITIROC_connect(CITIROC_serialNumber, &CITIROC_usbID);
+
+  if(!CITIROC_status){ 
+    cm_msg(MERROR, "frontend_init", "Cannot open CITIROC board");
+    return 0;
+  }else{
+    cm_msg(MINFO, "frontend_init", "Successfully opened CITIROC board");
+  }
 
   printf("Closing communication...\n");
   CITIROC_status = CITIROC_disconnet(&CITIROC_usbID);
-
-
-  /* Enable hot-link on settings/ of the equipment */
-  // size = sizeof(DT5743_CONFIG_SETTINGS);
-  // if ((status = db_open_record(hDB, hSet[0], &(tsvc[0]), size, MODE_READ, seq_callback, NULL)) != DB_SUCCESS) <<---- CAEN
-    // return status;
-
-  // Open connection to digitizer
-  // CAEN_DGTZ_ErrorCode ret; <<---- CAEN
-
-
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0 /*link num*/, 0, 0 /*base addr*/, &handle);
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0 /*link num*/, 0,  0x81110000 , &handle);
-  // ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,  0 , &handle); <<---- CAEN
-
-  // if(ret){ 
-  //   cm_msg(MERROR, "frontend_init", "cannot open digitizer"); <<---- CAEN
-  //   return 0;
-  // }else{
-  //   cm_msg(MINFO, "frontend_init", "successfully opened digitizer");		<<---- CAEN
-  // }
   
-  
-  // ret = CAEN_DGTZ_GetInfo(handle, &BoardInfo);
-  // if (ret) { 
-  //   cm_msg(MERROR, "frontend_init", "error getting info"); <<---- CAEN
-    
-  // }
-  
-  cm_msg(MINFO, "frontend_init", "Connected to CAEN Digitizer Model %s", BoardInfo.ModelName);
-  printf("ROC FPGA Release is %s\n", BoardInfo.ROC_FirmwareRel);
-  printf("AMC FPGA Release is %s\n", BoardInfo.AMC_FirmwareRel);
+  cm_msg(MINFO, "frontend_init", "Connected to CAEN Digitizer Model %s", CITIROC_serialNumber);
   
   // If a run is going, start the digitizer running
   int state = 0; 
@@ -383,114 +360,10 @@ INT initialize_for_run(){
   
   int module = 0, status;
   
-  // Get ODB settings
-  int size = sizeof(DT5743_CONFIG_SETTINGS);
-  if ((status = db_get_record (hDB, hSet[module], &tsvc[module], &size, 0)) != DB_SUCCESS)
-    return status;
-  
-  // Set digitizer length; length must be > 64 and length%16 == 0
-  if(tsvc[module].record_length % 16 == 0 && tsvc[module].record_length > 64 && 
-     tsvc[module].record_length <= 1024  ){    
-    ret = CAEN_DGTZ_SetRecordLength(handle, tsvc[module].record_length);
-    if(ret != 0) printf("Error setting record length: %i %i\n",ret,tsvc[module].record_length);
-  }else{
-    cm_msg(MERROR, "initialize", "Record length of %i is invalid.  Must be %16 == 0 and > 64 and <= 1024",tsvc[module].record_length );
-  }
-  // Set post trigger
-  ret = CAEN_DGTZ_SetSAMPostTriggerSize(handle, 0, tsvc[module].post_trigger[0]);
-  ret = CAEN_DGTZ_SetSAMPostTriggerSize(handle, 1, tsvc[module].post_trigger[1]);
-  ret = CAEN_DGTZ_SetSAMPostTriggerSize(handle, 2, tsvc[module].post_trigger[2]);
-  ret = CAEN_DGTZ_SetSAMPostTriggerSize(handle, 3, tsvc[module].post_trigger[3]);
-  if(ret != 0) printf("Error setting post trigger: %i %i %i \n",ret,tsvc[module].post_trigger[0],tsvc[module].post_trigger[1]);
-
-  // Set Sampling frequency
-  ret = CAEN_DGTZ_SetSAMSamplingFrequency(handle, tsvc[module].frequency);
-  if(ret != 0) printf("Error setting frequency: %i\n",ret);
-  
-  // Other SAMLONG digitizatoin parameters
-  ret = CAEN_DGTZ_SetSAMCorrectionLevel(handle, CAEN_DGTZ_SAM_CORRECTION_ALL);
-  //ret = CAEN_DGTZ_SetSAMCorrectionLevel(handle, CAEN_DGTZ_SAM_CORRECTION_DISABLED);
-  if(ret != 0) printf("Error setting CorLevel: %i\n",ret);
-  ret = CAEN_DGTZ_LoadSAMCorrectionData(handle);
-  if(ret != 0) printf("Error setting Correction Data: %i\n",ret);
-  ret = CAEN_DGTZ_DisableSAMPulseGen(handle,0);
-  if(ret != 0) printf("Error setting PulseGen: %i\n",ret);
-  ret = CAEN_DGTZ_SetSAMAcquisitionMode(handle, CAEN_DGTZ_AcquisitionMode_STANDARD);
-  if(ret != 0) printf("Error setting Acq Mode: %i\n",ret);
-  
-  // Set the DC offset
-  for(int i = 0; i < 8; i++){
-    ret = CAEN_DGTZ_SetChannelDCOffset(handle,i,(uint32_t)tsvc[module].dac[i]);
-    if(ret != 0 && ret != -17 ) printf("Error setting DAC: %i\n",ret);
-  
-  }
-
-  // Set Group enable
-  ret = CAEN_DGTZ_SetGroupEnableMask(handle, tsvc[module].group_mask);
-    if(ret != 0) printf("Error setting group enable: %i\n",ret);
-  
-
+  CITIROC_Status = CITIROC_initialize(CITIROC_usbID);
   sleep(3);
-  
-  
-  
-  printf("Check values on DT5743: \n");
-  uint32_t dcoffset;
-  ret |= CAEN_DGTZ_GetRecordLength(handle,&dcoffset);
-  printf("record length: %x\n",dcoffset);
-  //  ret |= CAEN_DGTZ_GetSAMSamplingFrequency(handle,&dcoffset);
-  //  printf("sampling frequency: %x\n",dcoffset);
-  ret |= CAEN_DGTZ_GetChannelDCOffset(handle,0,&dcoffset);
-  printf("Channel0 DC offset: %x\n",dcoffset);
-  ret |= CAEN_DGTZ_GetChannelDCOffset(handle,1,&dcoffset);
-  printf("Channel1 DC offset: %x\n",dcoffset);
-    ret |= CAEN_DGTZ_GetChannelDCOffset(handle,2,&dcoffset);
-  printf("Channel0 DC offset: %x\n",dcoffset);
-  ret |= CAEN_DGTZ_GetChannelDCOffset(handle,3,&dcoffset);
-  printf("Channel1 DC offset: %x\n",dcoffset);
-  
-  ret |= CAEN_DGTZ_SetAnalogMonOutput(handle,CAEN_DGTZ_AM_TRIGGER_MAJORITY);
-  
-  // enable the external trigger
-  ret |= CAEN_DGTZ_SetAcquisitionMode(handle, CAEN_DGTZ_SW_CONTROLLED);
-  ret |= CAEN_DGTZ_SetExtTriggerInputMode(handle, CAEN_DGTZ_TRGMODE_ACQ_AND_EXTOUT);
-  //ret |= CAEN_DGTZ_SetExtTriggerInputMode(handle, CAEN_DGTZ_TRGMODE_DISABLED);
-  
-  //Enable the trigger on channel
-  //ret |= CAEN_DGTZ_SetChannelSelfTrigger(handle,CAEN_DGTZ_TRGMODE_ACQ_ONLY,1);
-  
-  //ret |= CAEN_DGTZ_SetChannelTriggerThreshold(handle,0,(uint32_t)tsvc[module].threshold[0]);
-  //ret |= CAEN_DGTZ_SetChannelTriggerThreshold(handle,1,(uint32_t)tsvc[module].threshold[1]);
-  
-  //ret |= CAEN_DGTZ_SetTriggerPolarity(handle,0,CAEN_DGTZ_TriggerOnFallingEdge);
-  //ret |= CAEN_DGTZ_SetTriggerPolarity(handle,1,CAEN_DGTZ_TriggerOnRisingEdge);
-  
-  //ret |= CAEN_DGTZ_WriteRegister(handle,0x1084,1);
-  
-  // Only want to allocate memory once
-  static int allocatedBufferMemory = 0;
-  
-  if(!allocatedBufferMemory){
-    
-    uint32_t AllocatedSize;
-    
-    // Allocate buffer memory.  Seems to only need to happen once.
-    int ret3 = CAEN_DGTZ_MallocReadoutBuffer(handle, &gBuffer,&AllocatedSize); /* WARNING: This malloc must be done after the digitizer programming */
-    if(ret3) {
-      printf("Failed to malloc readout buffer\n");
-    }
-    
-    allocatedBufferMemory = 1;
-  }
-  
-  // Use NIM IO for trigger in.
-  // CAEN_DGTZ_WriteRegister(handle,0x811c,0x0);
-  
-  // Use TTL IO for trigger in.
-  CAEN_DGTZ_WriteRegister(handle,0x811c,0x1);
-  
-  // Start the acquisition
-  CAEN_DGTZ_SWStartAcquisition(handle);
+  CITIROC_Status = CITIROC_testParameters(CITIROC_usbID);
+  CITIROC_Status = CITIROC_enableDAQ(CITIROC_usbID);
   
   return ret;
 }
@@ -576,6 +449,8 @@ int Nloop, Ncount;
     
     // Read the correct register to check number of events stored on digitizer.
     uint32_t Data;
+    byte* fifo20, fifo21, fifo23, fifo24;
+    CITIROC_readFIFO()
     CAEN_DGTZ_ReadRegister(handle,0x812c,&Data);
     if(Data > 0) lam = 1;
     

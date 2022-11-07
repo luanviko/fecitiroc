@@ -17,12 +17,6 @@ and all their respective dependencies.
 The following functions are used to wrap FTD2XX and LALUsb functions 
 and communicate with the board. 
 
-
-* `bool CITIROC_printInfo(char* serialNumber):`\
-Returns basic information about the board, 
-such as serial number.
-
-
 * `bool CITIROC_connectBoard(char* serialNumber, int* usbId):`\
 Tries to connect with the board by using the `serialNumber`.
 Returns `usbId`

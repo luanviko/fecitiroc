@@ -39,6 +39,7 @@ L. Koerich, Nov 2022
 #define N_DT5743 1
 bool CITIROC_status;
 int CITIROC_usbID;
+const char* CITIROC_serialNumber = "CT1A_31A";
 
 /* Hardware */
 extern HNDLE hDB;
@@ -166,8 +167,171 @@ extern INT initialize_slow_control() {
     {"Temp.-sensor configuration b", "00000010"},
   };
 
+  midas::odb database_asic = {
+    {"chn", std::array<int,32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"calibDacQ", std::array<int,32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"enDiscri", std::array<int,1>{1}},
+    // {"ppDiscri", {"1"}},
+    // {"latchDiscri", {"1"}},
+    // {"enDiscriT", {"1"}},
+    // {"ppDiscriT", {"1"}},
+    // {"enCalibDacQ", {"1"}},
+    // {"ppCalibDacQ", {"1"}},
+    // {"enCalibDacT", {"1"}},
+    // {"ppCalibDacT", {"1"}},
+    // {"mask", {"1"}},
+    // {"ppThHg", {"1"}},
+    // {"enThHg", {"1"}},
+    // {"ppThLg", {"1"}},
+    // {"enThLg", {"1"}},
+    // {"biasSca", {"1"}},
+    // {"ppPdetHg", {"1"}},
+    // {"enPdetHg", {"1"}},
+    // {"ppPdetLg", {"1"}},
+    // {"enPdetLg", {"1"}},
+    // {"scaOrPdHg", {"1"}},
+    // {"scaOrPdLg", {"1"}},
+    // {"bypassPd", {"1"}},
+    // {"selTrigExtPd", {"1"}},
+    // {"ppFshBuffer", {"1"}},
+    // {"enFsh", {"1"}},
+    // {"ppFsh", {"1"}},
+    // {"ppSshLg", {"1"}},
+    // {"enSshLg", {"1"}},
+    // {"shapingTimeLg", std::array<int, 3>{}},
+    // {"ppSshHg", {"1"}},
+    // {"enSshHg", {"1"}},
+    // {"shapingTimeHg", std::array<int, 3>{}},
+    // {"paLgBias", {"1"}},
+    // {"ppPaHg", {"1"}},
+    // {"enPaHg", {"1"}},
+    // {"ppPaLg", {"1"}},
+    // {"enPaLg", {"1"}},
+    // {"fshOnLg", {"1"}},
+    // {"enInputDac", {"1"}},
+    // {"dacRef", {"1"}},
+    // {"inputDac", std::array<int, 8>{}},
+    // {"cmdInputDac", std::array<int, 8>{}},
+    // {"paHgGain (15)", {"1"}},
+    // {"paLgGain (15)", {"1"}},
+    // {"CtestHg (15)", {"1"}},
+    // {"CtestLg (15)", {"1"}},
+    // {"enPa (15)", {"1"}},
+    // {"ppTemp", {"1"}},
+    // {"enTemp", {"1"}},
+    // {"ppBg", {"1"}},
+    // {"enBg", {"1"}},
+    // {"enThresholdDac1", {"1"}},
+    // {"ppThresholdDac1", {"1"}},
+    // {"enThresholdDac2", {"1"}},
+    // {"ppThresholdDac2", {"1"}},
+
+    // {"threshold1", std::array<int, 10>{}},
+    // {"threshold2", std::array<int, 10>{}},
+    
+    // {"enHgOtaQ", {"1"}},
+    // {"ppHgOtaQ", {"1"}},
+    // {"enLgOtaQ", {"1"}},
+    // {"ppLgOtaQ", {"1"}},
+    // {"enProbeOtaQ", {"1"}},
+    // {"ppProbeOtaQ", {"1"}},
+    // {"testBitOtaQ", {"1"}},
+    // {"enValEvtReceiver", {"1"}},
+    // {"ppValEvtReceiver", {"1"}},
+    // {"enRazChnReceiver", {"1"}},
+    // {"ppRazChnReceiver", {"1"}},
+    // {"enDigitalMuxOutput", {"1"}},
+    // {"enOr32", {"1"}},
+    // {"enNor32Oc", {"1"}},
+    // {"triggerPolarity", {"1"}},
+    // {"enNor32TOc", {"1"}},
+    // {"enTriggersOutput", {"1"}},
+  };
+
+  midas::odb database_asic_addresses = {
+    {"chn", "0"},
+    {"calibDacQ", {"128"}},
+    {"enDiscri", {"256"}},
+    {"ppDiscri", {"257"}},
+    {"latchDiscri", {"258"}},
+    {"enDiscriT", {"259"}},
+    {"ppDiscriT", {"260"}},
+    {"enCalibDacQ", {"261"}},
+    {"ppCalibDacQ", {"262"}},
+    {"enCalibDacT", {"263"}},
+    {"ppCalibDacT", {"264"}},
+    {"mask", {"265"}},
+    {"ppThHg", {"297"}},
+    {"enThHg", {"298"}},
+    {"ppThLg", {"299"}},
+    {"enThLg", {"300"}},
+    {"biasSca", {"301"}},
+    {"ppPdetHg", {"302"}},
+    {"enPdetHg", {"303"}},
+    {"ppPdetLg", {"304"}},
+    {"enPdetLg", {"305"}},
+    {"scaOrPdHg", {"306"}},
+    {"scaOrPdLg", {"307"}},
+    {"bypassPd", {"308"}},
+    {"selTrigExtPd", {"309"}},
+    {"ppFshBuffer", {"310"}},
+    {"enFsh", {"311"}},
+    {"ppFsh", {"312"}},
+    {"ppSshLg", {"313"}},
+    {"enSshLg", {"314"}},
+    {"shapingTimeLg", {"315"}},
+    {"ppSshHg", {"318"}},
+    {"enSshHg", {"319"}},
+    {"shapingTimeHg", {"320"}},
+    {"paLgBias", {"323"}},
+    {"ppPaHg", {"324"}},
+    {"enPaHg", {"325"}},
+    {"ppPaLg", {"326"}},
+    {"enPaLg", {"327"}},
+    {"fshOnLg", {"328"}},
+    {"enInputDac", {"329"}},
+    {"dacRef", {"330"}},
+    {"inputDac", {"331"}},
+    {"cmdInputDac", {"339"}},
+    {"paHgGain", {"619"}},
+    {"paLgGain", {"625"}},
+    {"CtestHg", {"631"}},
+    {"CtestLg", {"632"}},
+    {"enPa", {"633"}},
+    {"ppTemp", {"1099"}},
+    {"enTemp", {"1100"}},
+    {"ppBg", {"1101"}},
+    {"enBg", {"1102"}},
+    {"enThresholdDac1", {"1103"}},
+    {"ppThresholdDac1", {"1104"}},
+    {"enThresholdDac2", {"1105"}},
+    {"ppThresholdDac2", {"1106"}},
+    {"threshold1", {"1107"}},
+    {"threshold2", {"1117"}},
+    {"enHgOtaQ", {"1127"}},
+    {"ppHgOtaQ", {"1128"}},
+    {"enLgOtaQ", {"1129"}},
+    {"ppLgOtaQ", {"1130"}},
+    {"enProbeOtaQ", {"1131"}},
+    {"ppProbeOtaQ", {"1132"}},
+    {"testBitOtaQ", {"1133"}},
+    {"enValEvtReceiver", {"1134"}},
+    {"ppValEvtReceiver", {"1135"}},
+    {"enRazChnReceiver", {"1136"}},
+    {"ppRazChnReceiver", {"1137"}},
+    {"enDigitalMuxOutput", {"1138"}},
+    {"enOr32", {"1139"}},
+    {"enNor32Oc", {"1140"}},
+    {"triggerPolarity", {"1141"}},
+    {"enNor32TOc", {"1142"}},
+    {"enTriggersOutput", {"1143"}},
+
+  };
+
   // Add parameters to the slow-control key
   database_slow.connect(odbdir_temp);
+  database_asic.connect_and_fix_structure(odbdir_asic_values);
+  database_asic_addresses.connect_and_fix_structure(odbdir_asic_addresses);
 
   // Catch error
   int ret = database_slow.is_connected_odb();
@@ -289,6 +453,7 @@ INT frontend_init()
   initialize_slow_control();
   initialize_daq_parameters();
   initialize_HV_parameters();
+  bool CITIROC_status = CITIROC_sendASIC();
 
   // Suppress watchdog for PICe for nowma
   cm_set_watchdog_params(FALSE, 0);
@@ -306,19 +471,19 @@ INT frontend_init()
 
   // Open communication and initialize board
   printf("Opening communication...\n");
-  CITIROC_status = CITIROC_connect(CITIROC_serialNumber, &CITIROC_usbID);
+  // CITIROC_status = CITIROC_connect(CITIROC_serialNumber, &CITIROC_usbID);
 
-  if(!CITIROC_status){ 
-    cm_msg(MERROR, "frontend_init", "Cannot open CITIROC board");
-    return 0;
-  }else{
-    cm_msg(MINFO, "frontend_init", "Successfully opened CITIROC board");
-  }
+  // if(!CITIROC_status){ 
+  //   cm_msg(MERROR, "frontend_init", "Cannot open CITIROC board");
+  //   return 0;
+  // }else{
+  //   cm_msg(MINFO, "frontend_init", "Successfully opened CITIROC board");
+  // }
 
   printf("Closing communication...\n");
-  CITIROC_status = CITIROC_disconnet(&CITIROC_usbID);
+  // CITIROC_status = CITIROC_disconnet(&CITIROC_usbID);
   
-  cm_msg(MINFO, "frontend_init", "Connected to CAEN Digitizer Model %s", CITIROC_serialNumber);
+  cm_msg(MINFO, "frontend_init", "Connected to CITIROC board of serial no. %s", CITIROC_serialNumber);
   
   // If a run is going, start the digitizer running
   int state = 0; 
@@ -352,18 +517,19 @@ INT initialize_for_run(){
   printf("Initializing digitizer for running\n");
   
   int i,j, ret = 0;
-  ret |= CAEN_DGTZ_Reset(handle);
-  if (ret != 0) {
-    printf("Error: Unable to reset digitizer.\nPlease reset digitizer manually then restart the program\n");
+  CITIROC_status |= CITIROC_reset(CITIROC_usbID);
+  if (CITIROC_status != 0) {
+    printf("Error: Unable to reset digitizer.\n");
+    CITIROC_raiseException();
     return -1;
   }
   
   int module = 0, status;
   
-  CITIROC_Status = CITIROC_initialize(CITIROC_usbID);
+  CITIROC_status = CITIROC_initialize(CITIROC_usbID);
   sleep(3);
-  CITIROC_Status = CITIROC_testParameters(CITIROC_usbID);
-  CITIROC_Status = CITIROC_enableDAQ(CITIROC_usbID);
+  CITIROC_status = CITIROC_testParameters(CITIROC_usbID);
+  CITIROC_status = CITIROC_enableDAQ(CITIROC_usbID);
   
   return ret;
 }
@@ -449,8 +615,6 @@ int Nloop, Ncount;
     
     // Read the correct register to check number of events stored on digitizer.
     uint32_t Data;
-    byte* fifo20, fifo21, fifo23, fifo24;
-    CITIROC_readFIFO()
     CAEN_DGTZ_ReadRegister(handle,0x812c,&Data);
     if(Data > 0) lam = 1;
     
@@ -490,10 +654,14 @@ INT read_trigger_event(char *pevent, INT off)
    uint32_t buffsize;
    uint32_t numEvents;    
 	
+  byte* fifo20, fifo21, fifo23, fifo24;
+  int wordCount = 0;
+  CITIROC_status = CITIROC_readFIFO(CITIROC_usbID, fifo20, fifo21, fifo23, fifo24, wordCount);
 
-   int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, gBuffer, &buffsize);
+
+  //  int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, gBuffer, &buffsize);
 	//int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_2eVME, gBuffer, &buffsize);
-   if(ret2){
+   if(CITIROC_status){
       printf("Failed to read data,\n");
    }
 

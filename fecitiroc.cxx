@@ -168,54 +168,55 @@ extern INT initialize_slow_control() {
   };
 
   midas::odb database_asic = {
-    {"chn",                std::array<int,32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    {"calibDacQ",          std::array<int,32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    {"enDiscri",           std::array<int,1>{1}},
-    {"ppDiscri",           std::array<int,1>{1}},
-    {"latchDiscri",        std::array<int,1>{1}},
-    {"enDiscriT",          std::array<int,1>{1}},
-    {"ppDiscriT",          std::array<int,1>{1}},
-    {"enCalibDacQ",        std::array<int,1>{1}},
-    {"ppCalibDacQ",        std::array<int,1>{1}},
-    {"enCalibDacT",        std::array<int,1>{1}},
-    {"ppCalibDacT",        std::array<int,1>{1}},
+    {"chn",                std::array<int, 32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"calibDacQ",          std::array<int, 32>{15, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    {"enDiscri",           std::array<int, 1>{1}},
+    {"ppDiscri",           std::array<int, 1>{1}},
+    {"latchDiscri",        std::array<int, 1>{1}},
+    {"enDiscriT",          std::array<int, 1>{1}},
+    {"ppDiscriT",          std::array<int, 1>{1}},
+    {"enCalibDacQ",        std::array<int, 1>{1}},
+    {"ppCalibDacQ",        std::array<int, 1>{1}},
+    {"enCalibDacT",        std::array<int, 1>{1}},
+    {"ppCalibDacT",        std::array<int, 1>{1}},
     {"mask",               std::array<int, 32>{}},
-    {"ppThHg",             std::array<int,1>{1}},
-    {"enThHg",             std::array<int,1>{1}},
-    {"ppThLg",             std::array<int,1>{1}},
-    {"enThLg",             std::array<int,1>{1}},
-    {"biasSca",            std::array<int,1>{1}},
-    {"ppPdetHg",           std::array<int,1>{1}},
-    {"enPdetHg",           std::array<int,1>{1}},
-    {"ppPdetLg",           std::array<int,1>{1}},
-    {"enPdetLg",           std::array<int,1>{1}},
-    {"scaOrPdHg",          std::array<int,1>{1}},
-    {"scaOrPdLg",          std::array<int,1>{1}},
-    {"bypassPd",           std::array<int,1>{1}},
-    {"selTrigExtPd",       std::array<int,1>{1}},
-    {"ppFshBuffer",        std::array<int,1>{1}},
-    {"enFsh",              std::array<int,1>{1}},
-    {"ppFsh",              std::array<int,1>{1}},
-    {"ppSshLg",            std::array<int,1>{1}},
-    {"enSshLg",            std::array<int,1>{1}},
-    {"shapingTimeLg",      std::array<int, 1>{}}, // 1 x 3-bit integer
-    {"ppSshHg",            std::array<int,1>{1}},
-    {"enSshHg",            std::array<int,1>{1}},
-    {"shapingTimeHg",      std::array<int, 1>{}}, // 1 x 3-bit integer
-    {"paLgBias",           std::array<int, 1>{}},
-    {"ppPaHg",             std::array<int, 1>{}},
-    {"enPaHg",             std::array<int, 1>{}},
-    {"ppPaLg",             std::array<int, 1>{}},
-    {"enPaLg",             std::array<int, 1>{}},
-    {"fshOnLg",            std::array<int, 1>{}},
-    {"enInputDac",         std::array<int, 1>{}},
-    {"dacRef",             std::array<int, 1>{}},
+    {"ppThHg",             std::array<int, 1>{1}},
+    {"enThHg",             std::array<int, 1>{1}},
+    {"ppThLg",             std::array<int, 1>{1}},
+    {"enThLg",             std::array<int, 1>{1}},
+    {"biasSca",            std::array<int, 1>{1}},
+    {"ppPdetHg",           std::array<int, 1>{1}},
+    {"enPdetHg",           std::array<int, 1>{1}},
+    {"ppPdetLg",           std::array<int, 1>{1}},
+    {"enPdetLg",           std::array<int, 1>{1}},
+    {"scaOrPdHg",          std::array<int, 1>{1}},
+    {"scaOrPdLg",          std::array<int, 1>{1}},
+    {"bypassPd",           std::array<int, 1>{1}},
+    {"selTrigExtPd",       std::array<int, 1>{1}},
+    {"ppFshBuffer",        std::array<int, 1>{1}},
+    {"enFsh",              std::array<int, 1>{1}},
+    {"ppFsh",              std::array<int, 1>{1}},
+    {"ppSshLg",            std::array<int, 1>{1}},
+    {"enSshLg",            std::array<int, 1>{1}},
+    {"shapingTimeLg",      std::array<int, 1>{1}}, // 1 x 3-bit integer
+    {"ppSshHg",            std::array<int, 1>{1}},
+    {"enSshHg",            std::array<int, 1>{1}},
+    {"shapingTimeHg",      std::array<int, 1>{1}}, // 1 x 3-bit integer
+    {"paLgBias",           std::array<int, 1>{1}},
+    {"ppPaHg",             std::array<int, 1>{1}},
+    {"enPaHg",             std::array<int, 1>{1}},
+    {"ppPaLg",             std::array<int, 1>{1}},
+    {"enPaLg",             std::array<int, 1>{1}},
+    {"fshOnLg",            std::array<int, 1>{1}},
+    {"enInputDac",         std::array<int, 1>{1}},
+    {"dacRef",             std::array<int, 1>{1}},
     {"inputDac",           std::array<int, 32>{}}, // 32 x 8-bit integer
+    {"sc_cmdInputDac",     std::array<int, 32>{}}, // 32 x 1-bit integer
     {"paHgGain",           std::array<int, 32>{}}, // 32 x 6-bit integer
     {"paLgGain",           std::array<int, 32>{}}, // 32 x 6-bit integer
-    {"CtestHg",            std::array<int, 32>{}},  // 32 x 1-bit integer
-    {"CtestLg",            std::array<int, 32>{}},  // 32 x 1-bit integer
-    {"enPa",               std::array<int, 32>{}},     // 32 x 1-bit integer
+    {"CtestHg",            std::array<int, 32>{}}, // 32 x 1-bit integer
+    {"CtestLg",            std::array<int, 32>{}}, // 32 x 1-bit integer
+    {"enPa",               std::array<int, 32>{}}, // 32 x 1-bit integer
     {"ppTemp",             std::array<int, 1>{}},
     {"enTemp",             std::array<int, 1>{}},
     {"ppBg",               std::array<int, 1>{}},
@@ -324,101 +325,100 @@ extern INT initialize_slow_control() {
 
   };
 
-midas::odb database_asic_sizes = {
-    {"chn", 4},
-    {"calibDacQ", {4}},
-    {"enDiscri", {1}},
-    {"ppDiscri", {1}},
-    {"latchDiscri", {1}},
-    {"enDiscriT", {1}},
-    {"ppDiscriT", {1}},
-    {"enCalibDacQ", {1}},
-    {"ppCalibDacQ", {1}},
-    {"enCalibDacT", {1}},
-    {"ppCalibDacT", {1}},
-    {"mask", {1}},
-    {"ppThHg", {1}},
-    {"enThHg", {1}},
-    {"ppThLg", {1}},
-    {"enThLg", {1}},
-    {"biasSca", {1}},
-    {"ppPdetHg", {1}},
-    {"enPdetHg", {1}},
-    {"ppPdetLg", {1}},
-    {"enPdetLg", {1}},
-    {"scaOrPdHg", {1}},
-    {"scaOrPdLg", {1}},
-    {"bypassPd", {1}},
-    {"selTrigExtPd", {1}},
-    {"ppFshBuffer", {1}},
-    {"enFsh", {1}},
-    {"ppFsh", {1}},
-    {"ppSshLg", {1}},
-    {"enSshLg", {1}},
-    {"shapingTimeLg", {1}},
-    {"ppSshHg", {1}},
-    {"enSshHg", {1}},
-    {"shapingTimeHg", {2}},
-    {"paLgBias", {1}},
-    {"ppPaHg", {1}},
-    {"enPaHg", {1}},
-    {"ppPaLg", {1}},
-    {"enPaLg", {1}},
-    {"fshOnLg", {1}},
-    {"enInputDac", {1}},
-    {"dacRef", {1}},
-    {"inputDac", {8}},
+  midas::odb database_asic_sizes = {
+      {"chn",                {4}},
+      {"calibDacQ",          {4}},
+      {"enDiscri",           {1}},
+      {"ppDiscri",           {1}},
+      {"latchDiscri",        {1}},
+      {"enDiscriT",          {1}},
+      {"ppDiscriT",          {1}},
+      {"enCalibDacQ",        {1}},
+      {"ppCalibDacQ",        {1}},
+      {"enCalibDacT",        {1}},
+      {"ppCalibDacT",        {1}},
+      {"mask",               {1}},
+      {"ppThHg",             {1}},
+      {"enThHg",             {1}},
+      {"ppThLg",             {1}},
+      {"enThLg",             {1}},
+      {"biasSca",            {1}},
+      {"ppPdetHg",           {1}},
+      {"enPdetHg",           {1}},
+      {"ppPdetLg",           {1}},
+      {"enPdetLg",           {1}},
+      {"scaOrPdHg",          {1}},
+      {"scaOrPdLg",          {1}},
+      {"bypassPd",           {1}},
+      {"selTrigExtPd",       {1}},
+      {"ppFshBuffer",        {1}},
+      {"enFsh",              {1}},
+      {"ppFsh",              {1}},
+      {"ppSshLg",            {1}},
+      {"enSshLg",            {1}},
+      {"shapingTimeLg",      {3}},
+      {"ppSshHg",            {1}},
+      {"enSshHg",            {1}},
+      {"shapingTimeHg",      {3}},
+      {"paLgBias",           {1}},
+      {"ppPaHg",             {1}},
+      {"enPaHg",             {1}},
+      {"ppPaLg",             {1}},
+      {"enPaLg",             {1}},
+      {"fshOnLg",            {1}},
+      {"enInputDac",         {1}},
+      {"dacRef",             {1}},
+      {"sc_cmdInputDac",     {1}},
+      {"inputDac",           {8}},
+      {"paHgGain",           {6}},
+      {"paLgGain",           {6}},
+      {"CtestHg",            {1}},
+      {"CtestLg",            {1}},
+      {"enPa",               {1}},
+      {"ppTemp",             {1}},
+      {"enTemp",             {1}},
+      {"ppBg",               {1}},
+      {"enBg",               {1}},
+      {"enThresholdDac1",    {1}},
+      {"ppThresholdDac1",    {1}},
+      {"enThresholdDac2",    {1}},
+      {"ppThresholdDac2",    {1}},
+      {"threshold1",         {10}},
+      {"threshold2",         {10}},
+      {"enHgOtaQ",           {1}},
+      {"ppHgOtaQ",           {1}},
+      {"enLgOtaQ",           {1}},
+      {"ppLgOtaQ",           {1}},
+      {"enProbeOtaQ",        {1}},
+      {"ppProbeOtaQ",        {1}},
+      {"testBitOtaQ",        {1}},
+      {"enValEvtReceiver",   {1}},
+      {"ppValEvtReceiver",   {1}},
+      {"enRazChnReceiver",   {1}},
+      {"ppRazChnReceiver",   {1}},
+      {"enDigitalMuxOutput", {1}},
+      {"enOr32",             {1}},
+      {"enNor32Oc",          {1}},
+      {"triggerPolarity",    {1}},
+      {"enNor32TOc",         {1}},
+      {"enTriggersOutput",   {1}},
+    };
 
-    {"paHgGain", {6}},
-    {"paLgGain", {6}},
-    {"CtestHg", {1}},
-    {"CtestLg", {1}},
-    {"enPa", {1}},
-    
-    {"ppTemp", {1}},
-    {"enTemp", {1}},
-    {"ppBg", {1}},
-    {"enBg", {1}},
-    {"enThresholdDac1", {1}},
-    {"ppThresholdDac1", {1}},
-    {"enThresholdDac2", {1}},
-    {"ppThresholdDac2", {1}},
-    {"threshold1", {10}},
-    {"threshold2", {10}},
-    {"enHgOtaQ", {1}},
-    {"ppHgOtaQ", {1}},
-    {"enLgOtaQ", {1}},
-    {"ppLgOtaQ", {1}},
-    {"enProbeOtaQ", {1}},
-    {"ppProbeOtaQ", {1}},
-    {"testBitOtaQ", {1}},
-    {"enValEvtReceiver", {1}},
-    {"ppValEvtReceiver", {1}},
-    {"enRazChnReceiver", {1}},
-    {"ppRazChnReceiver", {1}},
-    {"enDigitalMuxOutput", {1}},
-    {"enOr32", {1}},
-    {"enNor32Oc", {1}},
-    {"triggerPolarity", {1}},
-    {"enNor32TOc", {1}},
-    {"enTriggersOutput", {1}},
+    // Add parameters to the slow-control key
+    database_slow.connect(odbdir_temp);
+    database_asic.connect_and_fix_structure(odbdir_asic_values);
+    database_asic_addresses.connect_and_fix_structure(odbdir_asic_addresses);
+    database_asic_sizes.connect_and_fix_structure(odbdir_asic_sizes);
+
+    // Catch error
+    int ret = database_slow.is_connected_odb();
+    if (ret > 0) {
+      return ret;
+    } else {
+      printf("Unable to connect with slow-control ODB. Ret: %d.\n", ret);
+    }
 
   };
-
-  // Add parameters to the slow-control key
-  database_slow.connect(odbdir_temp);
-  database_asic.connect_and_fix_structure(odbdir_asic_values);
-  database_asic_addresses.connect_and_fix_structure(odbdir_asic_addresses);
-
-  // Catch error
-  int ret = database_slow.is_connected_odb();
-  if (ret > 0) {
-    return ret;
-  } else {
-    printf("Unable to connect with slow-control ODB. Ret: %d.\n", ret);
-  }
-
-}
 
 extern INT initialize_daq_parameters() {
 

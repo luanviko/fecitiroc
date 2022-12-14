@@ -20,6 +20,7 @@ const char odbdir_HV[1024]   = "/Equipment/Citiroc1A_HV";
 const char odbdir_temp[1024] = "/Equipment/Citiroc1A_Slow/Temperature";
 const char odbdir_asic_addresses[1024] = "/Equipment/Citiroc1A_Slow/ASIC_addresses";
 const char odbdir_asic_values[1024] = "/Equipment/Citiroc1A_Slow/ASIC_values";
+const char odbdir_asic_sizes[1024] = "/Equipment/Citiroc1A_Slow/ASIC_sizes";
 
 // Parameter names at ODB directories
 const char odb_temp_enable  = "Enable temperature sensor";

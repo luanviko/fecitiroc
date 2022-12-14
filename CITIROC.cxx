@@ -144,9 +144,9 @@ bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary) {
      *  Returns an array with size *numberOfBits*, 
      *  with remaining values set to zero.
      *  Little-endian format.
-     @param n
-     @param numberOfBits
-     @param binary
+     @param n: decimal integer to convert to binary
+     @param numberOfBits: number of bits you want
+     @param binary: array with binary number
      @return true
      */ 
     for (int j=numberOfBits-1; j>=0; j--) {
@@ -167,7 +167,8 @@ bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary) {
 bool CITIROC_sendASIC() {
     /** 
      * Create ASIC bit-stack and send to FPGA.
-     @param global asic odbxx objects.
+     @param odbdir_asic_addresses: global odbxx object.
+     @param odbdir_asic_values: global odbxx object.
      @return true if usbStatus successful.
      */
     int bitCounter = 0;
@@ -176,63 +177,59 @@ bool CITIROC_sendASIC() {
     std::string bitStack;
     midas::odb asic_subaddress(odbdir_asic_addresses);
     midas::odb asic_values(odbdir_asic_values);
-
-    std::vector<int> chn = (std::vector<int>)asic_values["chn"];
-    std::vector<int> calibDacQ = (std::vector<int>)asic_values["calibDacQ"];
-    
-    // for (int i; i < chn.size(); i++) {
-    //     printf("bit: %d, chn: %s %x\n", bitCounter, std::to_string(chn.at(i)).c_str(), (int)chn.at(i));
-    //     int n = (int)chn.at(i);
-    //     if (n == 0) {
-    //         for (int j=0; j<4; j++) {
-    //             asicStack[bitCounter] = 0;
-    //             printf("asicStack[%d]: %d\n", bitCounter, asicStack[bitCounter]);
-    //             bitCounter++;
-    //         }
-    //     } else {
-    //         for(int j=0; n>0; j++) {
-    //             asicStack[bitCounter] = n%2;    
-    //             printf("asicStack[%d]: %d\n", bitCounter, asicStack[bitCounter]);
-    //             n=n/2;    
-    //             bitCounter++;
-                
-    //         }
-    //     }
-            
-    // }
+    midas::odb asic_sizes(odbdir_asic_sizes);
 
     for (midas::odb& subkey : asic_values) {
         std::vector<int> genericVector = (std::vector<int>)asic_values[subkey.get_name().c_str()];
         for (int i=0; i < genericVector.size(); i++) {
-            int n = (int)chn.at(i);
-            const int numberOfBits = 4;
-            char binary[numberOfBits]; 
-            CITIROC_convertToBits(n, numberOfBits, &binary);
-            // std::cout << subkey.get_name() << " :: " << genericVector.at(i) << std::endl;
+            int n = (int)genericVector.at(i);
+            const int numberOfBits = (int)asic_sizes[subkey.get_name().c_str()];
+            int binary[numberOfBits]; 
+            CITIROC_convertToBits(n, numberOfBits, binary);
+            for (int j=0; j<numberOfBits; j++) { std::cout << binary[j] << std::endl;}
+            // for (int j=0; j<numberOfBits; j++) {asicStack[bitCounter] = binary[j]; bitCounter++;}
+            // std::cout << subkey.get_name() << " :: " << genericVector.at(i) << " :: ";
+            // for (int j=0; j<numberOfBits; j++) {std::cout << binary[j];}
+            // std::cout << std::endl;
         }
     }
 
+    std::vector<int> inputDAC     = (std::vector<int>)asic_values["inputDac"];
+    std::vector<int> cmdInputDAC  = (std::vector<int>)asic_values["sc_cmdInputDac"];
+    std::vector<int> highGain     = (std::vector<int>)asic_values["paHgGain"];
+    std::vector<int> lowGain      = (std::vector<int>)asic_values["paLgGain"];
+    std::vector<int> testHighGain = (std::vector<int>)asic_values["CtestHg"];
+    std::vector<int> testLowGain  = (std::vector<int>)asic_values["CtestLg"];
+    std::vector<int> enablePA     = (std::vector<int>)asic_values["enPa"];
 
-    // for (int i=0; i < 128; i++) {
+    for (int i=0; i < highGain.size(); i++) {
+        int binary6[6] = {0, 0, 0, 0, 0, 0};
+        CITIROC_convertToBits(highGain.at(i), 6, binary6);
+        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j];}
+        asicStack[625+i*15] = lowGain.at(i);
+        asicStack[631+i*15] = testHighGain.at(i);
+        asicStack[632+i*15] = testLowGain.at(i);
+        asicStack[633+i*15] = enablePA.at(i);
+    }
+
+    for (int i=0; i < inputDAC.size(); i++) {
+        int binary8[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        CITIROC_convertToBits(inputDAC.at(i), 8, binary8);
+        for (int j=0; j<8; j++) {asicStack[331+i*15+j]=binary8[j];}
+        asicStack[339+i*9] = cmdInputDAC.at(i);
+    }
+
+
+    for (int i=0; i < 10; i++) {
+        std::cout << i << "  " << asicStack[i] << std::endl;
+    }
+
+    // for (int i=0; i < 1143; i++) {
     //     printf("asicStack[%d]: %d\n", i, asicStack[i]);
     // }
+    printf("Size of stack: %d\n", sizeof(asicStack)/sizeof(asicStack[0]) );
 
-    printf("ASIC stack: %s\n", bitStack.c_str());
-
-    // printf("Testing arrays in odbxx: %d", channel_0);
-
-    // std::string asic_stack = "";
-    // for (midas::odb& subkey : asic_values) {
-        // std::vector<int> subkey_values = (std::vector<int>)subkey;
-        // for (char i : subkey_values) {
-            // printf("Key %d: %s\n", i, subkey_values.at(i));
-        // }
-        // printf("Key %d: %s\n", i, subkey_values.at(i));
-        // std::cout << subkey.get_name() << " = " << subkey << std::endl;
-    // }
-    // printf("ASIC stack: %s\n", asic_stack);
-
-    return 0;
+    return true;
 }
 
 bool CITIROC_readASIC() {

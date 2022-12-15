@@ -42,6 +42,7 @@ bool CITIROC_testParameters(const int CITIROC_usbID);
 bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount);
 bool CITIROC_raiseException();
 bool CITIROC_sendASIC();
+bool CITIROC_writeASIC(std::vector<int> asicVector, const int numberOfWords);
 bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary);
 
 #endif 

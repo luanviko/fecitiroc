@@ -594,7 +594,7 @@ INT initialize_for_run(){
   printf("Initializing digitizer for running\n");
   
   int i,j, ret = 0;
-  CITIROC_status |= CITIROC_reset(CITIROC_usbID);
+  // CITIROC_status |= CITIROC_reset(CITIROC_usbID);
   if (CITIROC_status != 0) {
     printf("Error: Unable to reset digitizer.\n");
     CITIROC_raiseException();
@@ -603,10 +603,11 @@ INT initialize_for_run(){
   
   int module = 0, status;
   
-  CITIROC_status = CITIROC_initialize(CITIROC_usbID);
-  sleep(3);
-  CITIROC_status = CITIROC_testParameters(CITIROC_usbID);
-  CITIROC_status = CITIROC_enableDAQ(CITIROC_usbID);
+  CITIROC_status = CITIROC_sendASIC();
+  // CITIROC_status = CITIROC_initialize(CITIROC_usbID);
+  // sleep(3);
+  // CITIROC_status = CITIROC_testParameters(CITIROC_usbID);
+  // CITIROC_status = CITIROC_enableDAQ(CITIROC_usbID);
   
   return ret;
 }

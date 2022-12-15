@@ -116,6 +116,18 @@ bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const byte
     if (realCount == 1) {return true;} else {return false;}
 }
 
+bool CITIROC_sendWords(const int CITIROC_usbID, const char subAddress, const byte* binary[], const int numberOfWords) {
+    /* Converts byte :binary: to hexadecimal 
+    then sends such value to :subAddress: on the FPGA. */
+    byte words[numberOfWords];
+    for (int i=0; i<numberOfWords; i++) {
+        long integer = strtol(binary[i], NULL, 2);
+        sprintf(words[i], "%x", integer);
+    }
+    int realCount = UsbWrt(CITIROC_usbID, subAddress, words, numberOfWords);
+    if (realCount == 1) {return true;} else {return false;}
+}
+
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount) {
     /* Use UsbRd from LALUsb to read :word: from a given :subAddress:.
     :wordCount: must be equal to :realCount: */
@@ -171,28 +183,17 @@ bool CITIROC_sendASIC() {
      @param odbdir_asic_values: global odbxx object.
      @return true if usbStatus successful.
      */
+
+    printf("Preparing ASIC buffer...\n");
+
     int bitCounter = 0;
-    int asicStack[1144];
+    std::array<int, 1144> asicStack;
+    std::vector<int> asicVector;
 
     std::string bitStack;
     midas::odb asic_subaddress(odbdir_asic_addresses);
     midas::odb asic_values(odbdir_asic_values);
     midas::odb asic_sizes(odbdir_asic_sizes);
-
-    for (midas::odb& subkey : asic_values) {
-        std::vector<int> genericVector = (std::vector<int>)asic_values[subkey.get_name().c_str()];
-        for (int i=0; i < genericVector.size(); i++) {
-            int n = (int)genericVector.at(i);
-            const int numberOfBits = (int)asic_sizes[subkey.get_name().c_str()];
-            int binary[numberOfBits]; 
-            CITIROC_convertToBits(n, numberOfBits, binary);
-            for (int j=0; j<numberOfBits; j++) { std::cout << binary[j] << std::endl;}
-            // for (int j=0; j<numberOfBits; j++) {asicStack[bitCounter] = binary[j]; bitCounter++;}
-            // std::cout << subkey.get_name() << " :: " << genericVector.at(i) << " :: ";
-            // for (int j=0; j<numberOfBits; j++) {std::cout << binary[j];}
-            // std::cout << std::endl;
-        }
-    }
 
     std::vector<int> inputDAC     = (std::vector<int>)asic_values["inputDac"];
     std::vector<int> cmdInputDAC  = (std::vector<int>)asic_values["sc_cmdInputDac"];
@@ -202,32 +203,86 @@ bool CITIROC_sendASIC() {
     std::vector<int> testLowGain  = (std::vector<int>)asic_values["CtestLg"];
     std::vector<int> enablePA     = (std::vector<int>)asic_values["enPa"];
 
-    for (int i=0; i < highGain.size(); i++) {
-        int binary6[6] = {0, 0, 0, 0, 0, 0};
-        CITIROC_convertToBits(highGain.at(i), 6, binary6);
-        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j];}
-        asicStack[625+i*15] = lowGain.at(i);
-        asicStack[631+i*15] = testHighGain.at(i);
-        asicStack[632+i*15] = testLowGain.at(i);
-        asicStack[633+i*15] = enablePA.at(i);
+    for (midas::odb& subkey : asic_values) {
+        std::vector<int> genericVector = (std::vector<int>)asic_values[subkey.get_name().c_str()];
+        for (int i=0; i < genericVector.size(); i++) {
+            int n = (int)genericVector.at(i);
+            const int numberOfBits = (int)asic_sizes[subkey.get_name().c_str()];
+            int binary[numberOfBits]; 
+            CITIROC_convertToBits(n, numberOfBits, binary);
+            for (int j=0; j<numberOfBits; j++) {asicVector.push_back(binary[j]);}
+        }
     }
 
+    int bitCounterPA = 0;
+    for (int i=0; i < highGain.size(); i++) {
+        int binary6[6] = {0, 0, 0, 0, 0, 0};
+        
+        CITIROC_convertToBits(highGain.at(i), 6, binary6);
+        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
+        for (int j=0; j<6; j++) {asicVector.at(619+i*15+j)=binary6[j];}
+
+        CITIROC_convertToBits(lowGain.at(i), 6, binary6);
+        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
+        for (int j=0; j<6; j++) {asicVector.at(625+i*15) = lowGain.at(i);}
+ 
+        asicStack[631+i*15] = testHighGain.at(i); bitCounterPA++;
+        asicVector.at(631+i*15) = testHighGain.at(i);
+
+        asicStack[632+i*15] = testLowGain.at(i); bitCounterPA++;
+        asicVector.at(632+i*15) = testLowGain.at(i);
+
+        asicStack[633+i*15] = enablePA.at(i); bitCounterPA++;
+        asicVector.at(633+i*15) = enablePA.at(i);
+
+    }
+    printf("PA bits (should be 480): %d\n", bitCounterPA );
+
+    int bitCounterDAC = 0;
     for (int i=0; i < inputDAC.size(); i++) {
         int binary8[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         CITIROC_convertToBits(inputDAC.at(i), 8, binary8);
-        for (int j=0; j<8; j++) {asicStack[331+i*15+j]=binary8[j];}
-        asicStack[339+i*9] = cmdInputDAC.at(i);
+        
+        for (int j=0; j<8; j++) {asicStack[331+i*15+j]=binary8[j]; bitCounterDAC++;}
+        for (int j=0; j<8; j++) {asicVector.at(331+i*15+j) = binary8[j];}
+
+        asicStack[339+i*9] = cmdInputDAC.at(i); bitCounterDAC++;
+        asicVector.at(339+i*9) = cmdInputDAC.at(i);
+    }
+    printf("PA bits (should be 288): %d\n", bitCounterDAC );
+
+    printf("ASIC stack: ");
+    for (int i=0; i < 1144; i++) {printf("%d", asicVector.at(i));}
+    printf("\nSize of stack: %d\n", asicVector.size() );
+
+    CITIROC_writeASIC(asicVector, asicVector.size()/8);
+
+    return true;
+}
+
+bool CITIROC_writeASIC(std::vector<int> asicVector, const int numberOfWords) {
+    
+    int asicArray[asicVector.size()];
+    byte words[numberOfWords];
+    printf("%d words\n", numberOfWords);
+
+    for (int i=0; i<asicVector.size(); i++) {
+        asicArray[i] = asicVector.at(i);
     }
 
-
-    for (int i=0; i < 10; i++) {
-        std::cout << i << "  " << asicStack[i] << std::endl;
+    for (int i=0; i<numberOfWords; i++) {
+        std::string wordAsString; byte wordAsChar[9];
+        for (int j=0; j<8; j++) {
+            // Convert int to char by adding '0' to int value
+            wordAsString.push_back(asicArray[i*8+j]+'0');
+        }
+        strcpy(wordAsChar, wordAsString.c_str());
+        words[i] = wordAsChar;
     }
 
-    // for (int i=0; i < 1143; i++) {
-    //     printf("asicStack[%d]: %d\n", i, asicStack[i]);
-    // }
-    printf("Size of stack: %d\n", sizeof(asicStack)/sizeof(asicStack[0]) );
+    for (int i=0; i<numberOfWords; i++) {
+        std::cout << i << "  " << words[i] << std::endl;
+    } 
 
     return true;
 }

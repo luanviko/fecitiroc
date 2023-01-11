@@ -1,12 +1,10 @@
 /********************************************************************\
 Frontend program for reading out WEEROC CITIROC1A.
 
-We make calls to FD2XX and LALUsb routines, 
-so this frontend requires such libraries to be installed.
-ODB will be accessed using the new odbxx objects.
+Call functions from the _CITIROC_ API wrapper
+to set slow-control parameters and acquire data. 
 
-Based on the frontend for the 
-CAEN DT5743 digitizer developed by T. Lindner.
+Based on the frontend for the CAEN DT5743 digitizer developed by T. Lindner.
 
 L. Koerich, Nov 2022
 \********************************************************************/
@@ -404,11 +402,24 @@ extern INT initialize_slow_control() {
       {"enTriggersOutput",   {1}},
     };
 
+  midas::odb database_slow_control = {
+    {"rstbPa", true},
+    {"readOutSpeed", 1},
+    {"NOR32polarity", false},
+    {"disReadAdc", false},
+    {"enSerialLink", false},
+    {"selRazChn", false},
+    {"valEvt", false},
+    {"razChn", false},
+    {"selValEvt", false},
+  };
+
     // Add parameters to the slow-control key
     database_slow.connect(odbdir_temp);
     database_asic.connect_and_fix_structure(odbdir_asic_values);
     database_asic_addresses.connect_and_fix_structure(odbdir_asic_addresses);
     database_asic_sizes.connect_and_fix_structure(odbdir_asic_sizes);
+    database_slow_control.connect_and_fix_structure(odbdir_slow_control);
 
     // Catch error
     int ret = database_slow.is_connected_odb();
@@ -530,7 +541,12 @@ INT frontend_init()
   initialize_slow_control();
   initialize_daq_parameters();
   initialize_HV_parameters();
-  bool CITIROC_status = CITIROC_sendASIC();
+
+  CITIROC_status = CITIROC_sendASIC(CITIROC_usbID);
+  if (CITIROC_status == false) {
+    cm_msg(MERROR, "initialize_for_run", "Unable to send ASIC string to board.");
+    CITIROC_raiseException();
+  }
 
   // Suppress watchdog for PICe for nowma
   cm_set_watchdog_params(FALSE, 0);
@@ -596,14 +612,17 @@ INT initialize_for_run(){
   int i,j, ret = 0;
   // CITIROC_status |= CITIROC_reset(CITIROC_usbID);
   if (CITIROC_status != 0) {
-    printf("Error: Unable to reset digitizer.\n");
-    CITIROC_raiseException();
+    cm_msg(MERROR, "initialize_for_run", "Unable to reset CITIROC board.");
     return -1;
   }
   
   int module = 0, status;
   
-  CITIROC_status = CITIROC_sendASIC();
+  CITIROC_status = CITIROC_sendASIC(CITIROC_usbID);
+  if (CITIROC_status == false) {
+    cm_msg(MERROR, "initialize_for_run", "Unable to send ASIC string to board.");
+    CITIROC_raiseException();
+  }
   // CITIROC_status = CITIROC_initialize(CITIROC_usbID);
   // sleep(3);
   // CITIROC_status = CITIROC_testParameters(CITIROC_usbID);

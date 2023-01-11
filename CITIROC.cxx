@@ -142,12 +142,61 @@ bool CITIROC_testParameters(const int CITIROC_usbID){
 
 bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount) {
     
+    // Private variables
+    bool usbStatus;
+
+    // The FIFO in the FPGA can store up to 100 acquisitions per cycle
+    int fifoLength = 100;
+    int numberOfAcquisitions = 1000;
+    int numberOfCycles = (int)numberOfAcquisitions/fifoLength;
+
+    // Add one cycle for the remainder or if nbCycle == 0 (ie nbAcq < 100)
+    if (numberOfAcquisitions % fifoLength != 0 || numberOfCycles == 0) {numberOfCycles++;} 
+
+    for (int cycle = 0; cycle < numberOfCycles; cycle++) {
+
+        // TODO: 
+        // Set number of channels outside this functions
+        int numberOfChannels = 1;
+
+        // Determine the number of acquisitions in a cycle.
+        // TODO: Understand why is it inside the loop.
+        int acquisitionsInCycle = 0;
+        if (numberOfAcquisitions >= fifoLength) {
+            acquisitionsInCycle = fifoLength;
+        } else if (numberOfAcquisitions < fifoLength) {
+            acquisitionsInCycle = numberOfAcquisitions;
+        }
+
+        // Subaddress 45:
+        // Number of acquisitions to save in FIFO 
+        // before reading it.
+        usbStatus = sendInt(usbId, 45, acquisitionsInCycle);
+
+        usbStatus = sendWord(usbId, 43, DAQ_ON);
+        CITIROC_errorHandler(usbStatus, CITIROC_usbId);
+
+        int dataCount = (numberOfChannels+1)*acquisitionsInCycle;
+        byte* fifo20, fifo21, fifo23, fifo24;
+        usbStatus = readWord(usbId, "20", fifo20, dataCount);
+        CITIROC_errorHandler(usbStatus, CITIROC_usbId)
+
+        usbStatus = sendWord(usbId, 43, DAQ_OFF);
+        CITIROC_errorHandler(usbStatus, CITIROC_usbId);
+
+    }
+
     return true;
+
+
 }
 
-bool CITIROC_raiseException() {
+void CITIROC_raiseException() {
+    /** 
+     *  Find the error raised by the LALUsb API.
+     */
+    printf("LALUsb raised the following expection:\n");
     USB_Perror(USB_GetLastError());
-    return true;
 }
 
 bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary) {
@@ -167,16 +216,9 @@ bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary) {
         n = n/2;
     }
     return true;
-
-    // for(int j=0; n>0; j++) {
-    //     asicStack[j] = n%2;    
-    //     // printf("asicStack[%d]: %d\n", bitCounter, asicStack[bitCounter]);
-    //     n=n/2;    
-        
-    // }
 }
 
-bool CITIROC_sendASIC() {
+bool CITIROC_sendASIC(const int CITIROC_usbID) {
     /** 
      * Create ASIC bit-stack and send to FPGA.
      @param odbdir_asic_addresses: global odbxx object.
@@ -202,7 +244,7 @@ bool CITIROC_sendASIC() {
     std::vector<int> testHighGain = (std::vector<int>)asic_values["CtestHg"];
     std::vector<int> testLowGain  = (std::vector<int>)asic_values["CtestLg"];
     std::vector<int> enablePA     = (std::vector<int>)asic_values["enPa"];
-
+    
     for (midas::odb& subkey : asic_values) {
         std::vector<int> genericVector = (std::vector<int>)asic_values[subkey.get_name().c_str()];
         for (int i=0; i < genericVector.size(); i++) {
@@ -212,7 +254,7 @@ bool CITIROC_sendASIC() {
             CITIROC_convertToBits(n, numberOfBits, binary);
             for (int j=0; j<numberOfBits; j++) {asicVector.push_back(binary[j]);}
         }
-    }
+            }
 
     int bitCounterPA = 0;
     for (int i=0; i < highGain.size(); i++) {
@@ -248,43 +290,118 @@ bool CITIROC_sendASIC() {
 
         asicStack[339+i*9] = cmdInputDAC.at(i); bitCounterDAC++;
         asicVector.at(339+i*9) = cmdInputDAC.at(i);
-    }
+        }
     printf("PA bits (should be 288): %d\n", bitCounterDAC );
-
+            
     printf("ASIC stack: ");
     for (int i=0; i < 1144; i++) {printf("%d", asicVector.at(i));}
     printf("\nSize of stack: %d\n", asicVector.size() );
 
-    CITIROC_writeASIC(asicVector, asicVector.size()/8);
+    CITIROC_writeASIC(CITIROC_usbID, asicVector, asicVector.size()/8);
 
     return true;
 }
 
-bool CITIROC_writeASIC(std::vector<int> asicVector, const int numberOfWords) {
-    
-    int asicArray[asicVector.size()];
-    byte words[numberOfWords];
-    printf("%d words\n", numberOfWords);
+bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, const int numberOfWords) {
+    /** 
+     *  Reverse asicVector. 
+     *  Split asicVector into an array of 8-character elements.
+     *  Send words to board.
+     *  Please refer to "citiroc_fpga.xls" document.
+     @param asicVector: Contain vector with bits.
+     @param numberOfWords: Number of words inside asicVector.
+     */
+
+    bool usbStatus;
+    midas::odb asic_slow_control(odbdir_slow_control);
+    std::vector<int> reverseAsicVector;
+    std::vector<const char*> words;
 
     for (int i=0; i<asicVector.size(); i++) {
-        asicArray[i] = asicVector.at(i);
+        reverseAsicVector.push_back(asicVector[asicVector.size()-1-i]);
     }
 
     for (int i=0; i<numberOfWords; i++) {
-        std::string wordAsString; byte wordAsChar[9];
+        std::string word;
         for (int j=0; j<8; j++) {
-            // Convert int to char by adding '0' to int value
-            wordAsString.push_back(asicArray[i*8+j]+'0');
+            word.push_back(reverseAsicVector.at(i*8+j)+'0');
         }
-        strcpy(wordAsChar, wordAsString.c_str());
-        words[i] = wordAsChar;
+        words.push_back(word.c_str());
+        // std::cout<<words.at(i)<<std::endl;
     }
 
-    for (int i=0; i<numberOfWords; i++) {
-        std::cout << i << "  " << words[i] << std::endl;
-    } 
+    // Prepare board to send ASIC bits by sending Word 1. 
+    // Please refer to "citiroc_fpga.xls" document.
 
-    return true;
+    std::string rstbPa        = (asic_slow_control["rstbPa"] == true) ? "1" : "0";
+    std::string readOutSpeed  = asic_slow_control["readOutSpeed"];
+    std::string NOR32polarity = (asic_slow_control["NOR32polarity"] == true ) ? "1" : "0";
+    std::string disReadAdc = (asic_slow_control["disReadAdc"] == true ) ? "1" : "0";
+    std::string enSerialLink = (asic_slow_control["enSerialLink"] == true ) ? "1" : "0";
+    std::string selRazChn = (asic_slow_control["selRazChn"] == true ) ? "1" : "0";
+    std::string valEvt = (asic_slow_control["valEvt"] == true ) ? "1" : "0";
+    std::string razChn = (asic_slow_control["razChn"] == true ) ? "1" : "0";
+    std::string selValEvt = (asic_slow_control["selValEvt"] == true ) ? "1" : "0";
+
+    if (CITIROC_DEBUG_FLAG) {
+        return true;
+    }
+
+    // Select slow-control parameters on FPGA
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+
+    // Send ASIC bits to FPGA
+    for (int i=0; i<numberOfWords; i++) {
+        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
+        if (realCount != 1) {return false;}
+    }
+
+    // Start shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
+    
+    // Stop shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    
+    // Load slow control
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"01").c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+
+    // Send-slow control parameters to FPGA
+    for (int i=0; i<numberOfWords; i++) {
+        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
+        if (realCount != 1) {return false;}
+    }
+
+    // Start shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
+    
+    // Stop shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+
+    // Slow control test checksum -> test query
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "0", ("10"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+
+    // Send-slow control parameters to FPGA
+    for (int i=0; i<numberOfWords; i++) {
+        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
+        if (realCount != 1) {return false;}
+    }
+
+    // Start shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
+    
+    // Stop shifting parameters
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+
+    // Correlation test result
+    byte correlationResult;
+    usbStatus = CITIROC_readWord(CITIROC_usbID, "4", &correlationResult, 1);
+
+    // Reset slow-control checksum test query
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, "0", ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+
+    return false;
+
 }
 
 bool CITIROC_readASIC() {

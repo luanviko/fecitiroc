@@ -10,6 +10,8 @@
 #include "LALUsb.h"
 #include "odbxx.h"
 
+#define CITIROC_DEBUG_FLAG true
+
 // Byte -> 8 bits -> unsigned char.
 typedef unsigned char byte;
 
@@ -21,6 +23,7 @@ const char odbdir_temp[1024] = "/Equipment/Citiroc1A_Slow/Temperature";
 const char odbdir_asic_addresses[1024] = "/Equipment/Citiroc1A_Slow/ASIC_addresses";
 const char odbdir_asic_values[1024] = "/Equipment/Citiroc1A_Slow/ASIC_values";
 const char odbdir_asic_sizes[1024] = "/Equipment/Citiroc1A_Slow/ASIC_sizes";
+const char odbdir_slow_control[1024] = "/Equipment/Citiroc1A_Slow/Slow_control";
 
 // Parameter names at ODB directories
 const char odb_temp_enable  = "Enable temperature sensor";
@@ -40,9 +43,9 @@ bool CITIROC_enableDAQ(const int CITIROC_usbID);
 bool CITIROC_disableDAQ(const int CITIROC_usbID);
 bool CITIROC_testParameters(const int CITIROC_usbID);
 bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount);
-bool CITIROC_raiseException();
-bool CITIROC_sendASIC();
-bool CITIROC_writeASIC(std::vector<int> asicVector, const int numberOfWords);
+void CITIROC_raiseException();
+bool CITIROC_sendASIC(const int CITIROC_usbID);
+bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, const int numberOfWords);
 bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary);
 
 #endif 

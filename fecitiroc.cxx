@@ -412,6 +412,17 @@ extern INT initialize_slow_control() {
     {"valEvt", false},
     {"razChn", false},
     {"selValEvt", false},
+    {"ADC1", true},
+    {"ADC2", true}, 
+    {"selHold", true},
+    {"selTrigToHold", true},
+    {"triggerTorQ", true},
+    {"rstbPS", true},
+    {"pwrOn", true},
+    {"selPSGlobalTrigger", true},
+    {"selPSMode", true},
+    {"PSGlobalTrigger", true},
+    {"PSMode", true}
   };
 
     // Add parameters to the slow-control key

@@ -106,33 +106,72 @@ bool CITIROC_disableDAQ(const int CITIROC_usbID) {
     if (usbStatus) {return true;} else {return false;}
 }
 
-bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const byte* binary) {
-    /* Converts byte :binary: to hexadecimal 
+bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const char* bitArray) {
+    /* Converts char :word: to hexadecimal 
     then sends such value to :subAddress: on the FPGA. */
+    byte* binary = (byte*)bitArray;
     long integer = strtol(binary, NULL, 2);
-    byte word[1] = {NULL};
-    sprintf(word, "%x", integer);
+    byte word[1] = {(byte)integer};
     int realCount = UsbWrt(CITIROC_usbID, subAddress, word, 1);
     if (realCount == 1) {return true;} else {return false;}
 }
 
-bool CITIROC_sendWords(const int CITIROC_usbID, const char subAddress, const byte* binary[], const int numberOfWords) {
+bool CITIROC_sendWords(const int CITIROC_usbID, const char subAddress, char* asicString, const int wordCount) {
     /* Converts byte :binary: to hexadecimal 
     then sends such value to :subAddress: on the FPGA. */
-    byte words[numberOfWords];
-    for (int i=0; i<numberOfWords; i++) {
-        long integer = strtol(binary[i], NULL, 2);
-        sprintf(words[i], "%x", integer);
+
+    byte reverseAsicString[1144];
+    byte asicWords[wordCount];
+    int writtenCount = 0;
+
+    printf("asic: %s\n", asicString);
+    for (int i=0; i<1144; i++) {reverseAsicString[i] = asicString[1143-i];}
+    printf("reverse: %s\n", reverseAsicString);
+    
+    for (int i=0; i<wordCount; i++) {
+
+        char temporaryWord[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+        char reversedTemporaryWord[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};    
+        for (int j=0; j<8; j++) {
+            strncat(reversedTemporaryWord, &reverseAsicString[8*i+7-j], 1);
+        }
+        printf("Reversed temporary string: %s\n", reversedTemporaryWord);
+        long reversedIntegerWord = strtol(reversedTemporaryWord, NULL, 2);
+        asicWords[i] = (byte)reversedIntegerWord;
     }
-    int realCount = UsbWrt(CITIROC_usbID, subAddress, words, numberOfWords);
-    if (realCount == 1) {return true;} else {return false;}
+    writtenCount = UsbWrt(CITIROC_usbID, subAddress, asicWords, 143);
+    printf("Byte count to ASIC: %d\n", writtenCount);
+    return writtenCount;
 }
 
-bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount) {
+bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, char* word, const int wordCount) {
     /* Use UsbRd from LALUsb to read :word: from a given :subAddress:.
     :wordCount: must be equal to :realCount: */
     int realCount = UsbRd(CITIROC_usbID, subAddress, word, wordCount);
     if (realCount <= 0) {return false;} else {return true;}
+}
+
+bool CITIROC_printWord(char subAddress, char* word, int wordCount){
+    printf("Printing subaddress %3d: ", subAddress);
+    for (int i=0; i<wordCount; i++) {
+        char final[1024];
+        int bits[8];
+        sprintf(final, "0x%x", (unsigned char)word[i]);
+        long ret = strtol(final, NULL, 16);
+        CITIROC_convertToBits(ret, 8, bits);
+        printf("%ld (", ret);
+        for (int j=0; j<8; j++) {
+            printf("%d", bits[j]);
+        }
+        printf(")\n");
+    }
+    return true;
+}
+
+bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress) {
+    char array0;
+    bool readStatus   = CITIROC_readWord(usbId, subAddress, &array0, 1);
+    bool printStatus  = CITIROC_printWord(subAddress, &array0, 1);
 }
 
 bool CITIROC_testParameters(const int CITIROC_usbID){ 
@@ -171,18 +210,15 @@ bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* 
         // Subaddress 45:
         // Number of acquisitions to save in FIFO 
         // before reading it.
-        usbStatus = sendInt(usbId, 45, acquisitionsInCycle);
+        // usbStatus = sendInt(CITIROC_usbID, 45, acquisitionsInCycle);
 
-        usbStatus = sendWord(usbId, 43, DAQ_ON);
-        CITIROC_errorHandler(usbStatus, CITIROC_usbId);
+        usbStatus = CITIROC_sendWord(CITIROC_usbID, 43, "10000000");
 
         int dataCount = (numberOfChannels+1)*acquisitionsInCycle;
         byte* fifo20, fifo21, fifo23, fifo24;
-        usbStatus = readWord(usbId, "20", fifo20, dataCount);
-        CITIROC_errorHandler(usbStatus, CITIROC_usbId)
+        usbStatus = CITIROC_readWord(CITIROC_usbID, "20", fifo20, dataCount);
 
-        usbStatus = sendWord(usbId, 43, DAQ_OFF);
-        CITIROC_errorHandler(usbStatus, CITIROC_usbId);
+        usbStatus = CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
 
     }
 
@@ -199,21 +235,21 @@ void CITIROC_raiseException() {
     USB_Perror(USB_GetLastError());
 }
 
-bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary) {
+bool CITIROC_convertToBits(int numberToConvert, const int numberOfBits, int* binary) {
     /** 
      *  Convert integer into binary. 
      *  Returns an array with size *numberOfBits*, 
      *  with remaining values set to zero.
      *  Little-endian format.
-     @param n: decimal integer to convert to binary
+     @param numberToConvert: decimal integer to convert to binary
      @param numberOfBits: number of bits you want
      @param binary: array with binary number
      @return true
      */ 
     for (int j=numberOfBits-1; j>=0; j--) {
-        if (n <= 0) {binary[j] = 0;}
-        else {binary[j] = n%2;}
-        n = n/2;
+        if (numberToConvert <= 0) {binary[j] = 0;}
+        else {binary[j] = numberToConvert%2;}
+        numberToConvert = numberToConvert/2;
     }
     return true;
 }

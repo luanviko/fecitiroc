@@ -515,6 +515,16 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
     if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
     if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
+    // Write 1 
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"01").c_str());    
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
+
+    // Write 1 again
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
+
     // Send-slow control parameters to FPGA
     realCount = UsbWrt(CITIROC_usbID, 10, asicWords, 143);
     if (realCount != numberOfWords) {USB_Perror(USB_GetLastError()); return false;}

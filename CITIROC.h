@@ -23,7 +23,8 @@ const char odbdir_temp[1024] = "/Equipment/Citiroc1A_Slow/Temperature";
 const char odbdir_asic_addresses[1024] = "/Equipment/Citiroc1A_Slow/ASIC_addresses";
 const char odbdir_asic_values[1024] = "/Equipment/Citiroc1A_Slow/ASIC_values";
 const char odbdir_asic_sizes[1024] = "/Equipment/Citiroc1A_Slow/ASIC_sizes";
-const char odbdir_slow_control[1024] = "/Equipment/Citiroc1A_Slow/Slow_control";
+const char odbdir_firmware[1024] = "/Equipment/Citiroc1A_Slow/Firmware";
+const char database_firmware[1024] = "/Equipment/Citiroc1A_Slow/Slow_control";
 
 // Parameter names at ODB directories
 const char odb_temp_enable  = "Enable temperature sensor";
@@ -33,7 +34,7 @@ const char odb_txsize = "FIFO write size";
 const char odb_rxsize = "FIFO read size";
 
 // Public methods/ functions
-bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID);
+int CITIROC_connect(char* CITIROC_serialNumber);
 bool CITIROC_initialize(const int CITIROC_usbID);
 bool CITIROC_reset(const int CITIROC_usbID);
 bool CITIROC_disconnet(const int CITIROC_usbID);
@@ -51,5 +52,7 @@ bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary);
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, char* word, const int wordCount);
 bool CITIROC_printWord(char subAddress, char word, int wordCount);
 bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress);
+bool CITIROC_sendFirmwareSettings(const int CITIROC_usbId);
+bool CITIROC_checksumQuery(const int CITIROC_usbId);
 
 #endif 

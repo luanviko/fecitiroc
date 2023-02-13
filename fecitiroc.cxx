@@ -402,27 +402,34 @@ extern INT initialize_slow_control() {
       {"enTriggersOutput",   {1}},
     };
 
-  midas::odb database_slow_control = {
-    {"rstbPa", true},
-    {"readOutSpeed", 1},
-    {"NOR32polarity", false},
-    {"disReadAdc", false},
-    {"enSerialLink", false},
-    {"selRazChn", false},
-    {"valEvt", false},
-    {"razChn", false},
-    {"selValEvt", false},
-    {"ADC1", true},
-    {"ADC2", true}, 
-    {"selHold", true},
-    {"selTrigToHold", true},
-    {"triggerTorQ", true},
-    {"rstbPS", true},
-    {"pwrOn", true},
-    {"selPSGlobalTrigger", true},
-    {"selPSMode", true},
-    {"PSGlobalTrigger", true},
-    {"PSMode", true}
+  midas::odb database_firmware = {
+    // word 0:
+    {"selValEvt", false},   // bit 0
+    {"razChn", false},      // bit 1
+    {"valEvt", true},       // bit 2
+    {"selRazChn", false},   // bit 3
+    {"enSerialLink", true}, // bit 4
+    {"disReadAdc", true},   // bit 5
+    //word 1:
+    {"OR32polarity", true}, // bit 2
+    {"readOutSpeed", 0},    // bit 3
+    {"rstbPa", true},       // bit 4
+    {"select", false},      // bit 5 
+    //word 2:
+    {"ADC1", false},          // bit 0   
+    {"ADC2", false},          // bit 1
+    //word 3: 
+    {"pwrOn", true},          // bit 0
+    {"triggerTorQ", false},   // bit 1
+    {"selTrigToHold", false}, // bit 2
+    {"selHold", true},        // bit 3
+    {"timeOutHold", true},    // bit 4
+    {"rstbPS", true},         // bit 7
+    //word 5:
+    {"PSMode", true},              // bit 7
+    {"PSGlobalTrigger", false},    // bit 6
+    {"selPSMode", false},          // bit 2
+    {"selPSGlobalTrigger", true}, // bit 1
   };
 
     // Add parameters to the slow-control key
@@ -430,7 +437,7 @@ extern INT initialize_slow_control() {
     database_asic.connect_and_fix_structure(odbdir_asic_values);
     database_asic_addresses.connect_and_fix_structure(odbdir_asic_addresses);
     database_asic_sizes.connect_and_fix_structure(odbdir_asic_sizes);
-    database_slow_control.connect_and_fix_structure(odbdir_slow_control);
+    database_firmware.connect_and_fix_structure(odbdir_firmware);
 
     // Catch error
     int ret = database_slow.is_connected_odb();
@@ -553,12 +560,6 @@ INT frontend_init()
   initialize_daq_parameters();
   initialize_HV_parameters();
 
-  CITIROC_status = CITIROC_sendASIC(CITIROC_usbID);
-  if (CITIROC_status == false) {
-    cm_msg(MERROR, "initialize_for_run", "Unable to send ASIC string to board.");
-    CITIROC_raiseException();
-  }
-
   // Suppress watchdog for PICe for nowma
   cm_set_watchdog_params(FALSE, 0);
 
@@ -575,20 +576,21 @@ INT frontend_init()
 
   // Open communication and initialize board
   printf("Opening communication...\n");
-  // CITIROC_status = CITIROC_connect(CITIROC_serialNumber, &CITIROC_usbID);
+  CITIROC_usbID = CITIROC_connect(CITIROC_serialNumber);
 
-  // if(!CITIROC_status){ 
-  //   cm_msg(MERROR, "frontend_init", "Cannot open CITIROC board");
-  //   return 0;
-  // }else{
-  //   cm_msg(MINFO, "frontend_init", "Successfully opened CITIROC board");
-  // }
+  if (CITIROC_usbID < 1) {
+    cm_msg(MERROR, "frontend_init", "Invalid usb ID. Unable to open CITIROC board");
+    return -1;
+  } else {
+    cm_msg(MINFO, "frontend_init", "Connected to CITIROC board of serial no. %s with usb ID: %d", CITIROC_serialNumber, CITIROC_usbID);
+  }
+  
+  CITIROC_status = CITIROC_initialize(CITIROC_usbID);
+  if (CITIROC_status != true) {
+    cm_msg(MERROR, "initialize_for_run", "Unable to initialize CITIROC board.");
+    return -1;
+  }
 
-  printf("Closing communication...\n");
-  // CITIROC_status = CITIROC_disconnet(&CITIROC_usbID);
-  
-  cm_msg(MINFO, "frontend_init", "Connected to CITIROC board of serial no. %s", CITIROC_serialNumber);
-  
   // If a run is going, start the digitizer running
   int state = 0; 
   size = sizeof(state); 
@@ -610,6 +612,10 @@ INT frontend_init()
 /*-- Frontend Exit -------------------------------------------------*/
 INT frontend_exit()
 {
+
+  printf("Closing communication and exiting frontend...\n");
+  CITIROC_status = CITIROC_disconnet(CITIROC_usbID);
+
   printf("End of exit\n");
   return SUCCESS;
 }
@@ -618,27 +624,24 @@ char *gBuffer = NULL;
 
 INT initialize_for_run(){
   
-  printf("Initializing digitizer for running\n");
+  printf("Initializing board for running\n");
   
   int i,j, ret = 0;
   // CITIROC_status |= CITIROC_reset(CITIROC_usbID);
-  if (CITIROC_status != 0) {
-    cm_msg(MERROR, "initialize_for_run", "Unable to reset CITIROC board.");
-    return -1;
-  }
-  
-  int module = 0, status;
-  
+  // if (CITIROC_status != 0) {
+  //   cm_msg(MERROR, "initialize_for_run", "Unable to reset CITIROC board.");
+  //   CITIROC_raiseException();
+  //   return -1;
+  // }
+
   CITIROC_status = CITIROC_sendASIC(CITIROC_usbID);
   if (CITIROC_status == false) {
     cm_msg(MERROR, "initialize_for_run", "Unable to send ASIC string to board.");
     CITIROC_raiseException();
   }
-  // CITIROC_status = CITIROC_initialize(CITIROC_usbID);
-  // sleep(3);
-  // CITIROC_status = CITIROC_testParameters(CITIROC_usbID);
-  // CITIROC_status = CITIROC_enableDAQ(CITIROC_usbID);
   
+  int module = 0, status;
+    
   return ret;
 }
 

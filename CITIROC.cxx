@@ -3,7 +3,7 @@
 #include <string>
 
 
-bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID) {
+int CITIROC_connect(char* CITIROC_serialNumber) {
     /**
      * Tries to open the board and, 
      * if succesful, pass the usb id by reference.
@@ -11,14 +11,14 @@ bool CITIROC_connect(char* CITIROC_serialNumber, int* CITIROC_usbID) {
      * @param CITIROC_usbID
      * @return true if CITIROC_usbID > 0
      */
-    printf("Generating FTD2XX device list...");
+    printf("FTD2XX: Generating FTD2XX device list...\n");
     int FT_numberOfDevices;
     FT_STATUS status = FT_CreateDeviceInfoList(&FT_numberOfDevices);
     if (status != FT_OK){return false;}
     int numberOfUsbDevices = USB_GetNumberOfDevs();
+    printf("LALUSB: Trying to connect with the board...\n");
     int usbID = OpenUsbDevice(CITIROC_serialNumber);
-    if (usbID > 0) {CITIROC_usbID = usbID; return true;} 
-    else {return false;}
+    return usbID;
 }
 
 bool CITIROC_initialize(const int CITIROC_usbId) {
@@ -39,29 +39,95 @@ bool CITIROC_initialize(const int CITIROC_usbId) {
     int ttimeout = (int)daq_parameters["Write time out (1-255 ms)"];
     int rtimeout = (int)daq_parameters["Read time out (1-255 ms)"];
 
-    printf("Initializing board...\n");
+    printf("LALUSB: Initializing device of usb ID: %d...\n", CITIROC_usbId);
     usbStatus = USB_Init(CITIROC_usbId, true);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
-    printf("Setting buffer sizes to (FIFO write size, FIFO read size): %i, %i\n", txsize, rxsize);
+    printf("LALUSB: Setting buffer sizes to (FIFO write size, FIFO read size): %i, %i\n", txsize, rxsize);
     usbStatus = USB_SetXferSize(CITIROC_usbId, rxsize, txsize);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
-    printf("Setting timeout values to (write timeout, read timeout): %i, %i\n", ttimeout, rtimeout);    
+    printf("LALUSB: Setting timeout values to (write timeout, read timeout): %i, %i\n", ttimeout, rtimeout);    
     usbStatus = USB_SetTimeouts(CITIROC_usbId, ttimeout, rtimeout);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
     
-    printf("Enabling temperature sensors...\n");
-    usbStatus = CITIROC_sendWord(CITIROC_usbId, 63, (byte)temp_parameters[odb_temp_enable]);
+    printf("CITIROC: Enabling CITIROC1A temperature sensors...\n");
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 63, "00110100");
+    CITIROC_readFPGASubAddress(CITIROC_usbId, 63);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
 
-    printf("Setting temperature configurations...");
-    usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, (byte)temp_parameters[odb_temp_configa]);
+    printf("CITIROC: Setting temperature configurations...");
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, "00000011");
+    CITIROC_readFPGASubAddress(CITIROC_usbId, 62);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
-    usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, (byte)temp_parameters[odb_temp_configb]);
+
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 62, "00000010");
+    CITIROC_readFPGASubAddress(CITIROC_usbId, 62);
     if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    printf("CITIROC: writing firmware options...");
+    usbStatus = CITIROC_sendFirmwareSettings(CITIROC_usbId);
 
     return true;
+}
+
+bool CITIROC_sendFirmwareSettings(const int CITIROC_usbId) {
+
+    bool usbStatus;
+
+    midas::odb firmware(odbdir_firmware);
+    std::string disReadAdc         = (firmware["disReadAdc"] == true ) ? "1" : "0";
+    std::string enSerialLink       = (firmware["enSerialLink"] == true ) ? "1" : "0";
+    std::string selRazChn          = (firmware["selRazChn"] == true ) ? "1" : "0";    
+    std::string valEvt             = (firmware["valEvt"] == true ) ? "1" : "0";
+    std::string razChn             = (firmware["razChn"] == true ) ? "1" : "0";
+    std::string selValEvt          = (firmware["selValEvt"] == true ) ? "1" : "0";
+    std::string rstbPa             = (firmware["rstbPa"] == true) ? "1" : "0";
+    std::string select             = (firmware["select"] == true) ? "1" : "0";
+    std::string readOutSpeed       = (firmware["readOutSpeed"] == 1) ? "1" : "0";
+    std::string NOR32polarity      = (firmware["OR32polarity"] == true ) ? "1" : "0";
+    std::string ADC1               = (firmware["ADC1"] == true) ? "1" : "0";
+    std::string ADC2               = (firmware["ADC2"] == true) ? "1" : "0";
+    std::string rstbPS             = (firmware["rstbPS"] == true) ? "1" : "0";
+    std::string timeOutHold        = (firmware["timeOutHold"] == true) ? "1" : "0";
+    std::string selHold            = (firmware["selHold"] == true) ? "1" : "0";
+    std::string selTrigToHold      = (firmware["selTrigToHold"] == true) ? "1" : "0";
+    std::string triggerTorQ        = (firmware["triggerTorQ"] == true) ? "1" : "0";
+    std::string pwrOn              = (firmware["pwrOn"] == true) ? "1" : "0";
+    std::string selPSGlobalTrigger = (firmware["selPSGlobalTrigger"] == true) ? "1" : "0";
+    std::string selPSMode          = (firmware["selPSMode"] == true) ? "1" : "0"; 
+    std::string PSGlobalTrigger    = (firmware["PSGlobalTrigger"] == true) ? "1" : "0";
+    std::string PSMode             = (firmware["PSMode"] == true) ? "1" : "0";
+    
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 0, ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 1, ("11"+select+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 2, ("000001"+ADC1+ADC2).c_str());
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 3, (rstbPS+"00"+timeOutHold+selHold+selTrigToHold+triggerTorQ+pwrOn).c_str());
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    usbStatus = CITIROC_sendWord(CITIROC_usbId, 5, ("0"+selPSGlobalTrigger+selPSMode+"000"+PSGlobalTrigger+PSMode).c_str());
+    if (usbStatus == false) { USB_Perror(USB_GetLastError()); return false; }
+
+    if (CITIROC_DEBUG_FLAG) {
+        std::cout << std::endl;
+        std::cout << "To be written on 0: " << ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str() << std::endl;
+        CITIROC_readFPGASubAddress(CITIROC_usbId, 0);
+        std::cout << "To be written on 1: " << ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str() << std::endl;    
+        CITIROC_readFPGASubAddress(CITIROC_usbId, 1);
+        std::cout << "To be written on 2: " << ("000001"+ADC1+ADC2).c_str() << std::endl;
+        CITIROC_readFPGASubAddress(CITIROC_usbId, 2);
+        std::cout << "To be written on 3: " << (rstbPS+"00"+timeOutHold+selHold+selTrigToHold+triggerTorQ+pwrOn).c_str() << std::endl; 
+        CITIROC_readFPGASubAddress(CITIROC_usbId, 3);
+        std::cout << "To be written on 5: " << ("0"+selPSGlobalTrigger+selPSMode+"000"+PSGlobalTrigger+PSMode).c_str() << std::endl;
+        CITIROC_readFPGASubAddress(CITIROC_usbId, 5);
+    }
+     
 }
 
 bool CITIROC_reset(const int CITIROC_usbID){
@@ -174,11 +240,6 @@ bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress) {
     bool printStatus  = CITIROC_printWord(subAddress, &array0, 1);
 }
 
-bool CITIROC_testParameters(const int CITIROC_usbID){ 
-
-    return true;
-}
-
 bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount) {
     
     // Private variables
@@ -273,6 +334,10 @@ bool CITIROC_sendASIC(const int CITIROC_usbID) {
     midas::odb asic_values(odbdir_asic_values);
     midas::odb asic_sizes(odbdir_asic_sizes);
 
+    std::vector<int> chn          = (std::vector<int>)asic_values["chn"];
+    std::vector<int> calibDacQ    = (std::vector<int>)asic_values["calibDacQ"];
+    std::vector<int> shapTimeLg   = (std::vector<int>)asic_values["shapingTimeLg"];
+    std::vector<int> shapTimeHg   = (std::vector<int>)asic_values["shapingTimeHg"];
     std::vector<int> inputDAC     = (std::vector<int>)asic_values["inputDac"];
     std::vector<int> cmdInputDAC  = (std::vector<int>)asic_values["sc_cmdInputDac"];
     std::vector<int> highGain     = (std::vector<int>)asic_values["paHgGain"];
@@ -290,20 +355,59 @@ bool CITIROC_sendASIC(const int CITIROC_usbID) {
             CITIROC_convertToBits(n, numberOfBits, binary);
             for (int j=0; j<numberOfBits; j++) {asicVector.push_back(binary[j]);}
         }
-            }
+    }
+
+    int bitCounterChn = 0;
+    int bitCalibDacQ  = 0; 
+    for (int i=0; i<chn.size(); i++) {
+        int binary4[4] = {0, 0, 0, 0};
+
+        CITIROC_convertToBits(chn.at(i), 4, binary4);
+        for (int j=0; j<4; j++) {asicStack[0+i*4+j]=binary4[3-j]; bitCounterChn++;}
+        for (int j=0; j<4; j++) {asicVector.at(0+i*4+j) = binary4[3-j];} 
+
+        CITIROC_convertToBits(calibDacQ.at(i), 4, binary4);
+        for (int j=0; j<4; j++) {asicStack[128+i*4+j]=binary4[3-j]; bitCalibDacQ++;}
+        for (int j=0; j<4; j++) {asicVector.at(128+i*4+j) = binary4[3-j];} 
+
+    }
+    printf("Channel 0 to 31 4-bit_t: (should be 128): %d\n", bitCounterChn);
+    printf("Channel 0 to 31 4-bit:   (should be 128): %d\n", bitCalibDacQ);
+
+    int bitCounterLGshaper = 0;
+    int bitCounterHGshaper = 0;
+    for (int i=0; i<shapTimeLg.size(); i++) {
+        int binary3[3] = {0, 0, 0};
+
+        CITIROC_convertToBits(shapTimeLg.at(i), 3, binary3);
+        for (int j=0; j<3; j++) {asicStack[315+i*3+j]=binary3[2-j]; bitCounterLGshaper++;}
+        for (int j=0; j<3; j++) {asicVector.at(315+i*3+j) = binary3[2-j];} 
+
+        CITIROC_convertToBits(shapTimeHg.at(i), 3, binary3);
+        for (int j=0; j<3; j++) {asicStack[320+i*3+j]=binary3[2-j]; bitCounterHGshaper++;}
+        for (int j=0; j<3; j++) {asicVector.at(320+i*3+j) = binary3[2-j];} 
+
+    }
+    printf("Time constant LG shaper (should be 3): %d\n", bitCounterLGshaper);
+    printf("Time constant HG shaper (should be 3): %d\n", bitCounterHGshaper);
 
     int bitCounterPA = 0;
     for (int i=0; i < highGain.size(); i++) {
         int binary6[6] = {0, 0, 0, 0, 0, 0};
         
         CITIROC_convertToBits(highGain.at(i), 6, binary6);
-        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
-        for (int j=0; j<6; j++) {asicVector.at(619+i*15+j)=binary6[j];}
+        // for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
+        // for (int j=0; j<6; j++) {asicVector.at(619+i*15+j)=binary6[j];}
+        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[5-j]; bitCounterPA++;}
+        for (int j=0; j<6; j++) {asicVector.at(619+i*15+j)=binary6[5-j];}
 
         CITIROC_convertToBits(lowGain.at(i), 6, binary6);
-        for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
-        for (int j=0; j<6; j++) {asicVector.at(625+i*15) = lowGain.at(i);}
- 
+        // for (int j=0; j<6; j++) {asicStack[619+i*15+j]=binary6[j]; bitCounterPA++;}
+        // for (int j=0; j<6; j++) {asicVector.at(625+i*15+j) = binary6[j];}
+        for (int j=0; j<6; j++) {asicStack[625+i*15+j]=binary6[5-j]; bitCounterPA++;}
+        for (int j=0; j<6; j++) {asicVector.at(625+i*15+j) = binary6[5-j];}
+
+
         asicStack[631+i*15] = testHighGain.at(i); bitCounterPA++;
         asicVector.at(631+i*15) = testHighGain.at(i);
 
@@ -314,20 +418,20 @@ bool CITIROC_sendASIC(const int CITIROC_usbID) {
         asicVector.at(633+i*15) = enablePA.at(i);
 
     }
-    printf("PA bits (should be 480): %d\n", bitCounterPA );
+    printf("Channel 0-31 PA bits (should be 480): %d\n", bitCounterPA );
 
     int bitCounterDAC = 0;
     for (int i=0; i < inputDAC.size(); i++) {
         int binary8[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         CITIROC_convertToBits(inputDAC.at(i), 8, binary8);
         
-        for (int j=0; j<8; j++) {asicStack[331+i*15+j]=binary8[j]; bitCounterDAC++;}
-        for (int j=0; j<8; j++) {asicVector.at(331+i*15+j) = binary8[j];}
+        for (int j=0; j<8; j++) {asicStack[331+i*9+j]=binary8[j]; bitCounterDAC++;}
+        for (int j=0; j<8; j++) {asicVector.at(331+i*9+j) = binary8[j];}
 
         asicStack[339+i*9] = cmdInputDAC.at(i); bitCounterDAC++;
         asicVector.at(339+i*9) = cmdInputDAC.at(i);
         }
-    printf("PA bits (should be 288): %d\n", bitCounterDAC );
+    printf("Input 8-bit DAC (should be 288): %d\n", bitCounterDAC );
             
     printf("ASIC stack: ");
     for (int i=0; i < 1144; i++) {printf("%d", asicVector.at(i));}
@@ -349,98 +453,118 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
      */
 
     bool usbStatus;
-    midas::odb asic_slow_control(odbdir_slow_control);
+    int realCount = 0;
+    int reverseAsicString[1144];
+    byte asicWords[numberOfWords];
+    midas::odb firmware(odbdir_firmware);
     std::vector<int> reverseAsicVector;
     std::vector<const char*> words;
 
+    printf("ASIC size: %d\n", numberOfWords);
+
     for (int i=0; i<asicVector.size(); i++) {
-        reverseAsicVector.push_back(asicVector[asicVector.size()-1-i]);
-    }
+        reverseAsicString[i] = asicVector.at(asicVector.size()-1-i);
+        // reverseAsicString[i] = asicVector.at(i);
+    } 
 
     for (int i=0; i<numberOfWords; i++) {
-        std::string word;
-        for (int j=0; j<8; j++) {
-            word.push_back(reverseAsicVector.at(i*8+j)+'0');
+        // char reversedTemporaryWord[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+        std::string reversedTemporaryWord="";
+        for (int j=0; j<8; j++) {reversedTemporaryWord+=std::to_string(reverseAsicString[8*i+7-j]);} // <<-USE THIS ONE
+        // for (int j=0; j<8; j++) {reversedTemporaryWord+=std::to_string(reverseAsicString[8*i+j]);}
+        byte* binary = (byte*)reversedTemporaryWord.c_str();
+        long reversedIntegerWord = strtol(binary, NULL, 2);
+        asicWords[i] = (byte)reversedIntegerWord;
+        if (CITIROC_DEBUG_FLAG) {
+            printf("asic[%d]: %u\n", i, asicWords[i]);
         }
-        words.push_back(word.c_str());
-        // std::cout<<words.at(i)<<std::endl;
+        
     }
 
-    // Prepare board to send ASIC bits by sending Word 1. 
-    // Please refer to "citiroc_fpga.xls" document.
-
-    std::string rstbPa        = (asic_slow_control["rstbPa"] == true) ? "1" : "0";
-    std::string readOutSpeed  = asic_slow_control["readOutSpeed"];
-    std::string NOR32polarity = (asic_slow_control["NOR32polarity"] == true ) ? "1" : "0";
-    std::string disReadAdc = (asic_slow_control["disReadAdc"] == true ) ? "1" : "0";
-    std::string enSerialLink = (asic_slow_control["enSerialLink"] == true ) ? "1" : "0";
-    std::string selRazChn = (asic_slow_control["selRazChn"] == true ) ? "1" : "0";
-    std::string valEvt = (asic_slow_control["valEvt"] == true ) ? "1" : "0";
-    std::string razChn = (asic_slow_control["razChn"] == true ) ? "1" : "0";
-    std::string selValEvt = (asic_slow_control["selValEvt"] == true ) ? "1" : "0";
-
-    if (CITIROC_DEBUG_FLAG) {
-        return true;
-    }
+    std::string rstbPa        = (firmware["rstbPa"] == true) ? "1" : "0";
+    std::string readOutSpeed  = (firmware["readOutSpeed"] == true) ? "1" : "0";
+    std::string NOR32polarity = (firmware["OR32polarity"] == true ) ? "1" : "0";
+    std::string disReadAdc    = (firmware["disReadAdc"] == true ) ? "1" : "0";
+    std::string enSerialLink  = (firmware["enSerialLink"] == true ) ? "1" : "0";
+    std::string selRazChn     = (firmware["selRazChn"] == true ) ? "1" : "0";
+    std::string valEvt        = (firmware["valEvt"] == true ) ? "1" : "0";
+    std::string razChn        = (firmware["razChn"] == true ) ? "1" : "0";
+    std::string selValEvt     = (firmware["selValEvt"] == true ) ? "1" : "0";
 
     // Select slow-control parameters on FPGA
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
     // Send ASIC bits to FPGA
-    for (int i=0; i<numberOfWords; i++) {
-        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
-        if (realCount != 1) {return false;}
-    }
+    realCount = UsbWrt(CITIROC_usbID, 10, asicWords, 143);
+    if (realCount != numberOfWords) {USB_Perror(USB_GetLastError()); return false;}
 
     // Start shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
-    
-    // Stop shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
-    
-    // Load slow control
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"01").c_str());
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
-    // Send-slow control parameters to FPGA
-    for (int i=0; i<numberOfWords; i++) {
-        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
-        if (realCount != 1) {return false;}
-    }
-
-    // Start shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
-    
     // Stop shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
     // Slow control test checksum -> test query
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "0", ("10"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 0, ("10"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
     // Send-slow control parameters to FPGA
-    for (int i=0; i<numberOfWords; i++) {
-        int realCount = UsbWrt(CITIROC_usbID, "10", words.at(i), 1);
-        if (realCount != 1) {return false;}
-    }
+    realCount = UsbWrt(CITIROC_usbID, 10, asicWords, 143);
+    if (realCount != numberOfWords) {USB_Perror(USB_GetLastError()); return false;}
 
     // Start shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
-    
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"10").c_str());    
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
+
     // Stop shifting parameters
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "1", ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 1, ("111"+rstbPa+readOutSpeed+NOR32polarity+"00").c_str());
+    if (CITIROC_DEBUG_FLAG) {CITIROC_readFPGASubAddress(CITIROC_usbID, 1);}
+    if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
     // Correlation test result
-    byte correlationResult;
-    usbStatus = CITIROC_readWord(CITIROC_usbID, "4", &correlationResult, 1);
+    char correlationResult;
+    usbStatus = CITIROC_readWord(CITIROC_usbID, 4, &correlationResult, 1);
+    CITIROC_readFPGASubAddress(CITIROC_usbID, 4);
+    CITIROC_checksumQuery(CITIROC_usbID);
+    // printf("Correlation: %s\n", &correlationResult);
+    // std::string correlationResultString = std::string(&correlationResult);
+    // std::string correlationResultString = correlationResult;
+    // int stringComparison = correlationResultString.compare("00000000");
+    // printf("Word4 comparison result (0 is good): %d\n.", stringComparison);
+    // if (stringComparison != 0) {USB_Perror(USB_GetLastError()); return false;}
 
     // Reset slow-control checksum test query
-    usbStatus = CITIROC_sendWord(CITIROC_usbID, "0", ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+    usbStatus = CITIROC_sendWord(CITIROC_usbID, 0, ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
+
+    usbStatus = CITIROC_sendFirmwareSettings(CITIROC_usbID);
 
     return false;
 
 }
 
-bool CITIROC_readASIC() {
-
-    return 0;
+bool CITIROC_checksumQuery(const int CITIROC_usbId) {
+    // TO-DO: Check casting of char to unsigned char in sprintf.
+    char array0;
+    bool readStatus   = CITIROC_readWord(CITIROC_usbId, 4, &array0, 1);
+    printf("Test query: ");
+    char final[1024];
+    int bits[8];
+    sprintf(final, "0x%x", (unsigned char)array0);
+    long ret = strtol(final, NULL, 16);
+    CITIROC_convertToBits(ret, 8, bits);
+        printf("%ld (", ret);
+        for (int j=0; j<8; j++) {
+            printf("%d", bits[j]);
+        }
+        printf(")\n");
+    if (bits[0] != 0) {printf("ASIC string is not correct.\n"); return false;}
+    return true;
 }

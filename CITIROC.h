@@ -42,6 +42,7 @@ bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const char
 // bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount);
 bool CITIROC_enableDAQ(const int CITIROC_usbID);
 bool CITIROC_disableDAQ(const int CITIROC_usbID);
+bool CITIROC_startDAQ(const int CITIROC_usbID);
 bool CITIROC_testParameters(const int CITIROC_usbID);
 bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount);
 void CITIROC_raiseException();
@@ -54,5 +55,6 @@ bool CITIROC_printWord(char subAddress, char word, int wordCount);
 bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress);
 bool CITIROC_sendFirmwareSettings(const int CITIROC_usbId);
 bool CITIROC_checksumQuery(const int CITIROC_usbId);
+bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::string* wordString);
 
 #endif 

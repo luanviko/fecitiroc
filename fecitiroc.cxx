@@ -639,7 +639,13 @@ INT initialize_for_run(){
     cm_msg(MERROR, "initialize_for_run", "Unable to send ASIC string to board.");
     CITIROC_raiseException();
   }
-  
+
+  CITIROC_status = CITIROC_startDAQ(CITIROC_usbID);
+
+  // CITIROC_sendWord(CITIROC_usbID, 43, "10000000");
+  // CITIROC_readFPGASubAddress(CITIROC_usbID, 45);
+  // CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
+
   int module = 0, status;
     
   return ret;
@@ -767,7 +773,8 @@ INT read_trigger_event(char *pevent, INT off)
 	
   byte* fifo20, fifo21, fifo23, fifo24;
   int wordCount = 0;
-  CITIROC_status = CITIROC_readFIFO(CITIROC_usbID, fifo20, fifo21, fifo23, fifo24, wordCount);
+  // printf("Read trigger event.\n");
+  // CITIROC_status = CITIROC_readFIFO(CITIROC_usbID, fifo20, fifo21, fifo23, fifo24, wordCount);
 
 
   //  int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, gBuffer, &buffsize);

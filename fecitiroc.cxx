@@ -1,5 +1,5 @@
 /********************************************************************\
-Frontend program for reading out WEEROC CITIROC1A.
+Frontend program to read out the WEEROC CITIROC1A board.
 
 Call functions from the _CITIROC_ API wrapper
 to set slow-control parameters and acquire data. 
@@ -45,9 +45,11 @@ extern BOOL debug;
 
 HNDLE hSet[N_DT5743];
 DT5743_CONFIG_SETTINGS tsvc[N_DT5743];
-//const char BankName[N_DT5743][5]={"D743"};
-const char BankName[N_DT5743][5]={"43FS"};
+const char BankName[N_DT5743][5]={"D743"};
+const char BankNameHG[N_DT5743][6]={"WC1AHG"};
+const char BankNameLG[N_DT5743][6]={"WC1ALG"};
 const char BankNameSlow[N_DT5743][5]={"43SL"};
+// const char BankNameSlow[N_DT5743][6]={"WC1AL"};
 
 // extern int CITIROC_usbID;
 
@@ -430,6 +432,8 @@ extern INT initialize_slow_control() {
     {"PSGlobalTrigger", false},    // bit 6
     {"selPSMode", false},          // bit 2
     {"selPSGlobalTrigger", true}, // bit 1
+    //daq options
+    {"timeAcquisitionMode", true}
   };
 
     // Add parameters to the slow-control key
@@ -640,11 +644,11 @@ INT initialize_for_run(){
     CITIROC_raiseException();
   }
 
-  CITIROC_status = CITIROC_startDAQ(CITIROC_usbID);
-
-  // CITIROC_sendWord(CITIROC_usbID, 43, "10000000");
-  // CITIROC_readFPGASubAddress(CITIROC_usbID, 45);
-  // CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
+  CITIROC_status = CITIROC_sendFirmwareSettings(CITIROC_usbID);
+  if (CITIROC_status == false) {
+    cm_msg(MERROR, "initialize_for_run", "Unable to send firmware settings after ASIC.");
+    CITIROC_raiseException();
+  }
 
   int module = 0, status;
     
@@ -673,7 +677,7 @@ INT end_of_run(INT run_number, char *error)
   printf("EOR\n");
 
 	// Stop acquisition
-	CAEN_DGTZ_SWStopAcquisition(handle);
+	// CAEN_DGTZ_SWStopAcquisition(handle);
   
   return SUCCESS;
 }
@@ -730,10 +734,10 @@ int Nloop, Ncount;
 
   for (i = 0; i < count; i++) {
     
-    // Read the correct register to check number of events stored on digitizer.
-    uint32_t Data;
-    CAEN_DGTZ_ReadRegister(handle,0x812c,&Data);
-    if(Data > 0) lam = 1;
+    // Read register 4. If "0000001", DAQ is over and FIFO can be read.
+    std::string word4;
+    CITIROC_status = CITIROC_readString(CITIROC_usbID, 4, &word4);
+    if(word4.compare(std::string("00000001"))) lam = 1;
     
     ss_sleep(1);
     if (lam) {
@@ -771,19 +775,18 @@ INT read_trigger_event(char *pevent, INT off)
    uint32_t buffsize;
    uint32_t numEvents;    
 	
-  byte* fifo20, fifo21, fifo23, fifo24;
-  int wordCount = 0;
-  // printf("Read trigger event.\n");
-  // CITIROC_status = CITIROC_readFIFO(CITIROC_usbID, fifo20, fifo21, fifo23, fifo24, wordCount);
+  char* fifoHG, fifoLG;
+  int fifoSize = 0;
+  printf("Attempt to read trigger event.\n");
+  fifoSize = CITIROC_readFIFO(CITIROC_usbID, fifoHG, fifoLG);
 
-
-  //  int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, gBuffer, &buffsize);
-	//int ret2 =  CAEN_DGTZ_ReadData(handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_2eVME, gBuffer, &buffsize);
-   if(CITIROC_status){
+   if(CITIROC_status <= 0){
       printf("Failed to read data,\n");
    }
 
    uint32_t * words = (uint32_t*)gBuffer;
+   char* wordsHG = (char*)fifoHG;
+   char* wordsLG = (char*)fifoLG;
 
    gettimeofday(&te,NULL);
    long long etime = (long long)(te.tv_sec)*1000+(int)te.tv_usec/1000;
@@ -795,6 +798,8 @@ INT read_trigger_event(char *pevent, INT off)
 
 
    uint32_t *pddata;
+   uint32_t *pddataHG;
+   uint32_t *pddataLG;
    uint32_t nEvtSze;
    uint32_t sn = SERIAL_NUMBER(pevent);
 
@@ -802,6 +807,8 @@ INT read_trigger_event(char *pevent, INT off)
    bk_init32(pevent);
 
    bk_create(pevent, BankName[0], TID_DWORD, (void**)&pddata);//cast to void (arturo 25/11/15)
+   bk_create(pevent, BankNameHG[0], TID_DWORD, (void**)&pddataHG);
+   bk_create(pevent, BankNameLG[0], TID_DWORD, (void**)&pddataLG);
 
    //Add the time to the beginning
    *pddata++ = etime1;
@@ -812,6 +819,8 @@ INT read_trigger_event(char *pevent, INT off)
    int buffsize_32 = buffsize/4; // Calculate number of 32-bit words
    for(i = 0; i < buffsize_32; i++){
      *pddata++ = words[i];
+     *pddataHG++ = atoi(wordsHG[i]);
+     *pddataLG++ = atoi(wordsLG[i]);
      //printf("  data[%i] = 0x%x\n",i,words[i]);
    }
 

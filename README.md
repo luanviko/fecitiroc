@@ -15,8 +15,7 @@ This frontend requires the installation of the following frameworks/ libraries/ 
 
 and all their respective dependencies. 
 
-You may have to create a symbolic link or copy $MIDASSYS/mxml/mxml.h
-to your clone directory. 
+After installing Midas at MIDASSYS directory, you may have to add a symbolic link or copy `$MIDASSYS/mxml/mxml.h` to your clone directory. 
 
 ## CITIROC API wrapper
 
@@ -68,3 +67,69 @@ you can simply create a dicitionary with the parameters
   int DAC00 = (int)parameters["DAC 00"];
 ```
 and access the variable values by their key.
+
+# Communicating with the board
+
+In the following, I will use the words register and subaddress interchangeably. 
+
+This evaluation board has an Altera Cyclone III FPGA, 
+and a CITIROC1A ASIC chip proprietary to Weeroc.
+To communicate with the ASIC, you have to exchange information with the FPGA. 
+In turn, all FPGA communication is handled by the FT2232HL microcontroller.
+
+## 1 Microcontroller
+
+The FT2232HL microcontroller chip is programmed by the FTD2XX driver API.
+The LALUsb API wrapper is used here to provide extra data encapsulation
+and error handling when writing and reading buffers with microcontroller.
+
+For the `CITIROC` API wrapper, the FTD2XX drivers are directly used 
+to generate a list of devices connected to the computer. 
+Then, it uses LALUsb to write to and read from the board. 
+
+The Weeroc CITIROCUI app at times makes use of FTD2XX.net for C#, 
+which I am not sure is compatible with C/C++ under GNU/Linux.
+
+## 2 FPGA
+
+The FPGA memory is split into 8-bit registers, 
+where each register is labeled by a subaddress.
+Slow control parameters are written into such subaddresses.
+
+To send the 8-bit word "10010100" to subaddress 3, use 
+`CITIROC_sendWord(CITIROC_usbId, 3, "10010100")`.
+
+Each subaddress contains an 8-bit word, 
+where each bit sets a parameter to true (1) or false (0).
+Each bit represents a firmware parameter, so please
+refer to the `citiroc_fpga.xls` provided in the manual .
+
+## 3 ASIC
+
+The ASIC memory has 1144 bits, divided into registers of different sizes.
+Differently than the FPGA, changing a bit in the ASIC requires 
+rewriting the entire memory at the same time. 
+
+You have to use the `CITIROC_sendASIC(CITIROC_usbId)`
+function to generate the ASIC bit array from the ODB parameters
+and write it on the ASIC memory, through the FPGA.
+
+The `CITIROC_sendASIC` function will access the ODB parameters 
+at the `ASIC_values` key and build the ASIC string accordingly.
+It will then invoke the `CITIROC_writeASIC` function 
+to put the FPGA in ASIC-writing mode and 
+break the ASIC string into 8-bit words to be written on the board.
+
+## 4 Data acquisition
+
+You have to make sure that the ASIC is generating a trigger signal
+for data acquisition (DAQ) to happen. 
+If you do not see a trigger, 
+please connect a probe to the `T<n>` pins to verify the signal.
+
+<!-- `CITIROC_sendWord(... 43, "10000000")` -->
+<!-- `CITIROC_sendWord(... 45, "") -->
+
+# Running fecitiroc 
+
+

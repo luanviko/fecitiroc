@@ -34,27 +34,21 @@ const char odb_txsize = "FIFO write size";
 const char odb_rxsize = "FIFO read size";
 
 // Public methods/ functions
-int CITIROC_connect(char* CITIROC_serialNumber);
+int  CITIROC_connect(char* CITIROC_serialNumber);
 bool CITIROC_initialize(const int CITIROC_usbID);
 bool CITIROC_reset(const int CITIROC_usbID);
 bool CITIROC_disconnet(const int CITIROC_usbID);
 bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const char* bitArray);
-// bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, byte* word, const int wordCount);
-bool CITIROC_enableDAQ(const int CITIROC_usbID);
-bool CITIROC_disableDAQ(const int CITIROC_usbID);
-bool CITIROC_startDAQ(const int CITIROC_usbID);
-bool CITIROC_testParameters(const int CITIROC_usbID);
-bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount);
-void CITIROC_raiseException();
 bool CITIROC_sendWords(const int CITIROC_usbID, const char subAddress, char* asicString, const int wordCount);
 bool CITIROC_sendASIC(const int CITIROC_usbID);
 bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, const int numberOfWords);
 bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary);
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, char* word, const int wordCount);
+bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::string* wordString);
+int  CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG);
+bool  CITIROC_readFIFO_fixedAcqNumber(const int CITIROC_usbID, char* fifoHG, char* fifoLG);
 bool CITIROC_printWord(char subAddress, char word, int wordCount);
 bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress);
 bool CITIROC_sendFirmwareSettings(const int CITIROC_usbId);
-bool CITIROC_checksumQuery(const int CITIROC_usbId);
-bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::string* wordString);
-
+void CITIROC_raiseException();
 #endif 

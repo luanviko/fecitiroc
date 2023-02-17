@@ -152,7 +152,7 @@ bool CITIROC_disconnet(const int CITIROC_usbID) {
     return true;
 }
 
-bool CITIROC_startDAQ(const int CITIROC_usbID) {
+bool CITIROC_readFIFO_fixedAcqNumber(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
 
     CITIROC_sendFirmwareSettings(CITIROC_usbID);
 
@@ -161,6 +161,8 @@ bool CITIROC_startDAQ(const int CITIROC_usbID) {
     int nbCycles = nbAcq / FIFOAcqLength;
     if (nbAcq % FIFOAcqLength != 0 || nbCycles == 0) nbCycles++;
     int NbChannels = 1;
+
+    int readBytes20 = 0, readBytes21 = 0, readBytes23 = 0, readBytes24 = 0;
 
     printf("CITIROC: start DAQ\n");
     for (int cycle=0; cycle<nbCycles; cycle++) {
@@ -192,11 +194,7 @@ bool CITIROC_startDAQ(const int CITIROC_usbID) {
         std::cout << "word4: " << word4 << std::endl; 
         std::cout << "word22: " << word22 << std::endl; 
 
-        // CITIROC_readFPGASubAddress(CITIROC_usbID, 4);
-        // CITIROC_readFPGASubAddress(CITIROC_usbID, 22);
-
         if (word22.compare(std::string("00000000")) != 0) {cycle -= 1; continue; printf("cycle -1\n");}
-        // sleep(1);    
         
         int nbData = (NbChannels + 1) * nbAcqInCycle;
         char fifo20[nbData], fifo21[nbData], fifo23[nbData], fifo24[nbData];
@@ -206,6 +204,8 @@ bool CITIROC_startDAQ(const int CITIROC_usbID) {
         int readBytes24 = UsbRd(CITIROC_usbID, 24, &fifo24, nbData);
         printf("Read bytes (nbData): %d, %d, %d, %d (%d)\n", readBytes20, readBytes21, readBytes23, readBytes24, nbData);
         
+        // TODO: Find if nbData and readBytes are the same.
+        // TODO: change nbData to readBytes20 below.
         const int gainSize = 2*nbData;
         unsigned char fifoHG[gainSize];
         unsigned char fifoLG[gainSize];
@@ -265,26 +265,6 @@ bool CITIROC_startDAQ(const int CITIROC_usbID) {
     }
 
     return false;
-}
-
-bool CITIROC_enableDAQ(const int CITIROC_usbID) {
-    /** 
-     * Send daqON to sub address 43 to enable data acquisition.
-     * @param CITIROC_usbID
-     * @return true if usbStatus succesful.
-     */
-    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", "10000000");
-    if (usbStatus) {return true;} else {return false;}
-}
-
-bool CITIROC_disableDAQ(const int CITIROC_usbID) {
-    /** 
-     * Send daqOFF to sub address 43 to enable data acquisition.
-     * @param CITIROC_usbID
-     * @return true if usbStatus succesful.
-     */
-    bool usbStatus = CITIROC_sendWord(CITIROC_usbID, "43", "00000000");
-    if (usbStatus) {return true;} else {return false;}
 }
 
 bool CITIROC_sendWord(const int CITIROC_usbID, const char subAddress, const char* bitArray) {
@@ -357,7 +337,7 @@ bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress) {
 
 bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::string* wordString) {
     /*
-     * Return by pointer a string with bits stored in subAdress.
+     * Return by pointer a string with bits stored in :subAddress:.
      */
     char array0; 
     int realCount = UsbRd(CITIROC_usbID, subAddress, &array0, 1);
@@ -371,56 +351,6 @@ bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::str
         wordString->push_back(bit + '0');
     }
     return true;
-}
-
-bool CITIROC_readFIFO(const int CITIROC_usbID, byte* fifo20, byte*fifo21, byte* fifo23, byte* fifo24, int* wordCount) {
-    
-    // Private variables
-    bool usbStatus;
-
-    // The FIFO in the FPGA can store up to 100 acquisitions per cycle
-    int fifoLength = 100;
-    int numberOfAcquisitions = 1000;
-    int numberOfCycles = (int)numberOfAcquisitions/fifoLength;
-
-    CITIROC_readFPGASubAddress(CITIROC_usbID, 45);
-
-    // Add one cycle for the remainder or if nbCycle == 0 (ie nbAcq < 100)
-    // if (numberOfAcquisitions % fifoLength != 0 || numberOfCycles == 0) {numberOfCycles++;} 
-
-    // for (int cycle = 0; cycle < numberOfCycles; cycle++) {
-
-    //     // TODO: 
-    //     // Set number of channels outside this functions
-    //     int numberOfChannels = 1;
-
-    //     // Determine the number of acquisitions in a cycle.
-    //     // TODO: Understand why is it inside the loop.
-    //     int acquisitionsInCycle = 0;
-    //     if (numberOfAcquisitions >= fifoLength) {
-    //         acquisitionsInCycle = fifoLength;
-    //     } else if (numberOfAcquisitions < fifoLength) {
-    //         acquisitionsInCycle = numberOfAcquisitions;
-    //     }
-
-    //     // Subaddress 45:
-    //     // Number of acquisitions to save in FIFO 
-    //     // before reading it.
-    //     // usbStatus = sendInt(CITIROC_usbID, 45, acquisitionsInCycle);
-
-    //     usbStatus = CITIROC_sendWord(CITIROC_usbID, 43, "10000000");
-
-    //     int dataCount = (numberOfChannels+1)*acquisitionsInCycle;
-    //     byte* fifo20, fifo21, fifo23, fifo24;
-    //     usbStatus = CITIROC_readWord(CITIROC_usbID, "20", fifo20, dataCount);
-
-    //     usbStatus = CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
-
-    // }
-
-    return true;
-
-
 }
 
 void CITIROC_raiseException() {
@@ -675,16 +605,12 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
     if (usbStatus == false) {USB_Perror(USB_GetLastError()); return false;}
 
     // Correlation test result
-    char correlationResult;
-    usbStatus = CITIROC_readWord(CITIROC_usbID, 4, &correlationResult, 1);
-    CITIROC_readFPGASubAddress(CITIROC_usbID, 4);
-    CITIROC_checksumQuery(CITIROC_usbID);
-    // printf("Correlation: %s\n", &correlationResult);
-    // std::string correlationResultString = std::string(&correlationResult);
-    // std::string correlationResultString = correlationResult;
-    // int stringComparison = correlationResultString.compare("00000000");
-    // printf("Word4 comparison result (0 is good): %d\n.", stringComparison);
-    // if (stringComparison != 0) {USB_Perror(USB_GetLastError()); return false;}
+    std::string word4;
+    usbStatus = CITIROC_readString(CITIROC_usbID, 4, &word4);
+    if (word4.compare(std::string("10000000")) == 0) {
+        printf("ASIC: The checksum test results 1. Please check ASIC consistency and try again.\n");
+        return true;
+    }
 
     // Reset slow-control checksum test query
     usbStatus = CITIROC_sendWord(CITIROC_usbID, 0, ("00"+disReadAdc+enSerialLink+selRazChn+valEvt+razChn+selValEvt).c_str());
@@ -695,21 +621,121 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
 
 }
 
-bool CITIROC_checksumQuery(const int CITIROC_usbId) {
-    // TO-DO: Check casting of char to unsigned char in sprintf.
-    char array0;
-    bool readStatus   = CITIROC_readWord(CITIROC_usbId, 4, &array0, 1);
-    printf("Test query: ");
-    char final[1024];
-    int bits[8];
-    sprintf(final, "0x%x", (unsigned char)array0);
-    long ret = strtol(final, NULL, 16);
-    CITIROC_convertToBits(ret, 8, bits);
-        printf("%ld (", ret);
-        for (int j=0; j<8; j++) {
-            printf("%d", bits[j]);
+int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
+
+    midas::odb firmware(odbdir_firmware);
+    bool timeAcquisitionMode = firmware["timeAcquisitionMode"];
+
+    int FIFOAcqLength = 100;
+    int nbAcq = 200;
+    int nbCycles = nbAcq / FIFOAcqLength;
+    if (nbAcq % FIFOAcqLength != 0 || nbCycles == 0) nbCycles++;
+    int NbChannels = 1;
+    if (timeAcquisitionMode) nbCycles = 1;
+
+    int readBytes20 = 0, readBytes21 = 0, readBytes23 = 0, readBytes24 = 0;
+
+    printf("CITIROC: start DAQ\n");
+    for (int cycle=0; cycle<nbCycles; cycle++) {
+
+        int nbAcqInCycle = 0;
+        
+        if (nbAcq >= FIFOAcqLength) nbAcqInCycle = FIFOAcqLength;
+        else if (nbAcq < FIFOAcqLength) nbAcqInCycle = nbAcq;
+
+        if (timeAcquisitionMode) nbAcqInCycle = FIFOAcqLength; 
+
+        // Convert nbAcqInCycle -> strNbAcq (int -> std::string)
+        int bits[8];
+        std::string strNbAcq = "";
+        CITIROC_convertToBits(nbAcqInCycle, 8, bits);
+        printf("%i, ", nbAcqInCycle);
+        for (int j=0; j<8; j++) {printf("%i", bits[j]);}
+        printf(", ");
+        for (int bit: bits) {
+            strNbAcq.push_back(bit + '0');
         }
-        printf(")\n");
-    if (bits[0] != 0) {printf("ASIC string is not correct.\n"); return false;}
-    return true;
+        printf("%s\n", strNbAcq.c_str());
+    
+        printf("\n");
+        CITIROC_sendWord(CITIROC_usbID, 45, strNbAcq.c_str());
+        CITIROC_sendWord(CITIROC_usbID, 43, "10000000");
+
+        std::string word4, word22;
+        CITIROC_readString(CITIROC_usbID, 4, &word4);
+        CITIROC_readString(CITIROC_usbID, 22, &word22);
+        std::cout << "word4: " << word4 << std::endl; 
+        std::cout << "word22: " << word22 << std::endl; 
+
+        if (word22.compare(std::string("00000000")) != 0) {cycle -= 1; continue; printf("cycle -1\n");}
+        
+        int nbData = (NbChannels + 1) * nbAcqInCycle;
+        char fifo20[nbData], fifo21[nbData], fifo23[nbData], fifo24[nbData];
+        readBytes20 = UsbRd(CITIROC_usbID, 20, &fifo20, nbData);
+        readBytes21 = UsbRd(CITIROC_usbID, 21, &fifo21, nbData);
+        readBytes23 = UsbRd(CITIROC_usbID, 23, &fifo23, nbData);
+        readBytes24 = UsbRd(CITIROC_usbID, 24, &fifo24, nbData);
+        printf("Read bytes (nbData): %d, %d, %d, %d (%d)\n", readBytes20, readBytes21, readBytes23, readBytes24, nbData);
+        
+        // TODO: Find if nbData and readBytes are the same.
+        // TODO: change nbData to readBytes20 below.
+        const int gainSize = 2*nbData;
+        unsigned char fifoHG[gainSize];
+        unsigned char fifoLG[gainSize];
+
+        for (int j=0; j < nbData; j++) {
+            fifoHG[j*2 + 1] = (unsigned char)fifo20[j];
+            fifoHG[j*2 + 0] = (unsigned char)fifo21[j];
+            fifoHG[j*2 + 1] = (unsigned char)fifo23[j];
+            fifoHG[j*2 + 0] = (unsigned char)fifo24[j];
+        }
+
+        // long fifoHG_int[2*nbData],    fifoLG_int[2*nbData];
+        // char fifoHG_char[2*nbData],   fifoLG_char[2*nbData];
+        // int  fifoHG_bits[2*8*nbData], fifoLG_bits[2*8*nbData];
+        // convertFIFO(fifoHG, gainSize, &fifoHG_char, &fifoHG_bits);
+        // convertFIFO(fifoLG, 2*nbData, &fifoLG_char, &fifoLG_bits);
+
+        // printf("======== Cycle %d:\n", cycle);
+        // printf("fifoHG: ");
+        // for (int j=0; j < gainSize; j++) {
+        //         printf("%i, %u\n", j, fifoHG[j]);
+        //         printf(", %d", fifoHG[j]);
+        //         char final[1024];
+        //         int bits[8];
+        //         sprintf(final, "0x%x", (unsigned char)fifoHG[j]);
+        //         long ret = strtol(final, NULL, 16);
+        //         CITIROC_convertToBits(ret, 8, bits);
+        //         printf("%i, %d, %ld, ", j, fifoHG[j], ret);
+        //         for (int k=0; k < 8; k++) {
+        //             printf("%i", bits[k]);
+        //             fifoHG_bits[j*8+k] = bits[k];
+        //         }
+        //         printf("\n");
+        //     }
+
+        // int dataHG[NbChannels];
+        // for (int j=0; j<nbAcqInCycle; j++) {
+        //     for (int chn=0; chn<NbChannels+1; chn++) {
+        //         int boolArrayDataHG[] = {
+        //             fifoHG_bits[j*528 + chn*16+0],
+        //             fifoHG_bits[j*528 + chn*16+1],     
+        //             fifoHG_bits[j*528 + chn*16+2],     
+        //             fifoHG_bits[j*528 + chn*16+3],     
+        //             fifoHG_bits[j*528 + chn*16+4],     
+        //             fifoHG_bits[j*528 + chn*16+5],     
+        //             fifoHG_bits[j*528 + chn*16+6],     
+        //             fifoHG_bits[j*528 + chn*16+7],     
+        //             fifoHG_bits[j*528 + chn*16+8],     
+        //             fifoHG_bits[j*528 + chn*16+9],     
+        //             fifoHG_bits[j*528 + chn*16+10],     
+        //         };
+        //         dataHG[chn] = fifoHG_bits[0];
+        //     }
+        // }
+
+    CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
+    }
+
+    return readBytes20;
 }

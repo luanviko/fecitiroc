@@ -1,7 +1,8 @@
 /* API wrapper to interface MIDAS with CITIROC1A*/
 #include "CITIROC.h"
 #include <string>
-
+#include <fstream>
+#include <iostream>
 
 int CITIROC_connect(char* CITIROC_serialNumber) {
     /**
@@ -621,7 +622,8 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
 
 }
 
-int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
+int CITIROC_readFIFO(const int CITIROC_usbID, int* dataLG, int* dataHG, int* totalHits, int run_number) {
+// int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
 
     midas::odb firmware(odbdir_firmware);
     bool timeAcquisitionMode = firmware["timeAcquisitionMode"];
@@ -634,6 +636,13 @@ int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
     if (timeAcquisitionMode) nbCycles = 1;
 
     int readBytes20 = 0, readBytes21 = 0, readBytes23 = 0, readBytes24 = 0;
+
+    int Hit[NbChannels+1];
+
+    std::ofstream outputFile;
+    char fileName[1024];
+    sprintf(fileName, "~/online/test_run-%i.txt", run_number);
+    outputFile.open (fileName);
 
     printf("CITIROC: start DAQ\n");
     for (int cycle=0; cycle<nbCycles; cycle++) {
@@ -683,11 +692,103 @@ int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
         unsigned char fifoHG[gainSize];
         unsigned char fifoLG[gainSize];
 
-        for (int j=0; j < nbData; j++) {
+        // fifoHG[1] = fifo20[0]
+        // fifoHG[0] = fifo21[0]
+
+        // fifoLG[1] = fifo23[0]
+        // fifoLG[0] = fifo24[0]
+
+        // FIFO HG: fifo21+fifo20
+        // FIFO HG: ADC Readout HG[1...8] + ADC Readout [9..16] + ADC OTR HG + Hit + 0 + Start ADC Read out
+
+        for (int j=0; j<nbData; j++) {
             fifoHG[j*2 + 1] = (unsigned char)fifo20[j];
             fifoHG[j*2 + 0] = (unsigned char)fifo21[j];
-            fifoHG[j*2 + 1] = (unsigned char)fifo23[j];
-            fifoHG[j*2 + 0] = (unsigned char)fifo24[j];
+            fifoLG[j*2 + 1] = (unsigned char)fifo23[j];
+            fifoLG[j*2 + 0] = (unsigned char)fifo24[j];
+        }
+
+        // Convert each fifoHG element to 8-bit words, following big endian format. CAREFUL -> LSB on the left now.
+        int fifoHGbits[8*nbData];
+        for (int j=0; j < nbData; j++) {
+            char tempWord[1024];
+            int  tempBits[8];
+            sprintf(tempWord, "0x%x", (unsigned char)fifoHG[j]);
+            long tempInt = strtol(tempWord, NULL, 16);
+            CITIROC_convertToBits(tempInt, 8, tempBits);
+            for (int k=0; k<8; k++) {
+                // TODO: tempBits[7-k]
+                fifoHGbits[j*8+k] = tempBits[k];
+            }
+        }
+
+        // Convert each fifoLG element to 8-bit words, following big endian format. CAREFUL -> LSB on the left now.
+        int fifoLGbits[8*nbData];
+        for (int j=0; j < nbData; j++) {
+            char tempWord[1024];
+            int  tempBits[8];
+            sprintf(tempWord, "0x%x", (unsigned char)fifoLG[j]);
+            long tempInt = strtol(tempWord, NULL, 16);
+            CITIROC_convertToBits(tempInt, 8, tempBits);
+            for (int k=0; k<8; k++) {
+                // TODO: try tempBits[7-k] later
+                fifoLGbits[j*8+k] = tempBits[k];
+            }
+        }
+
+        // int dataHG[nbData];
+        // int dataLG[nbData];
+        int hit[nbData];
+        // int totalHit[nbData];
+
+        // HG 16 bits:
+        // FIFO20[0]:    StartADC ReadOut 
+        // FIFO20[1]:    0 
+        // FIFO20[2]:    Hit 
+        // FIFO20[3]:    ADC OTR HG
+        // FIFO20[4..7]: HG ADC[12..9]
+        // FIFO21[1..8]: HG ADC[8..1]
+
+        // LG 16 bits:
+        // FIFO23[0]:    0 
+        // FIFO23[1]:    0 
+        // FIFO23[2]:    0 
+        // FIFO23[3]:    ADC OTR LG
+        // FIFO23[4..7]: LG ADC[12..9]
+        // FIFO24[1..8]: LG ADC[8..1]
+    
+        for (int i=0; i<nbAcqInCycle; i++) {
+            std::string line;
+            for (int chn=0; chn<NbChannels+1; chn++) {
+                // 32 channels + 1 temperature sensor = 33 things to read out
+                // 33*16 = 528
+
+                // TODO: change int array to char
+                // TODO: use strncat to write on char
+                char adcHG[12];
+                for (int j=0; j<12; j++) {
+                    char tempOneBit[1] = {NULL};
+                    sprintf(tempOneBit,"%i",fifoHGbits[528*i+chn*16+j]);
+                    strncat(adcHG, &tempOneBit[0], 1);
+                }
+                dataHG[chn] = strtol(adcHG, NULL, 16);
+
+                char adcLG[12];
+                for (int j=0; j<12; j++) {
+                    char tempOneBit[1] = {NULL};
+                    sprintf(tempOneBit,"%i",fifoLGbits[528*i+chn*16+j]);
+                    strncat(adcLG, &tempOneBit[0], 1);
+                }
+                dataLG[chn] = strtol(adcLG, NULL, 16);
+
+                hit[chn] = fifoHGbits[i*528+chn*16+13];
+                totalHits[chn] += hit[chn];
+
+                if (chn==0) {line = std::to_string(chn);}
+                else {line = line+", "+std::to_string(chn);}
+
+            } 
+            outputFile << line.c_str() << std::endl;
         }
 
         // long fifoHG_int[2*nbData],    fifoLG_int[2*nbData];
@@ -734,8 +835,11 @@ int CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG) {
         //     }
         // }
 
+    
+
     CITIROC_sendWord(CITIROC_usbID, 43, "00000000");
     }
+    outputFile.close();
 
     return readBytes20;
 }

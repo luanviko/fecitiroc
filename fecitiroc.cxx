@@ -775,18 +775,20 @@ INT read_trigger_event(char *pevent, INT off)
    uint32_t buffsize;
    uint32_t numEvents;    
 	
-  char* fifoHG, fifoLG;
+  int* dataHG, dataLG, hits;
   int fifoSize = 0;
   printf("Attempt to read trigger event.\n");
-  fifoSize = CITIROC_readFIFO(CITIROC_usbID, fifoHG, fifoLG);
+  printf("Run number: %i\n", run_number);
+  fifoSize = CITIROC_readFIFO(CITIROC_usbID, dataHG, dataLG, hits, run_number);
 
    if(CITIROC_status <= 0){
       printf("Failed to read data,\n");
    }
 
+    // TODO: Fix conversion to right int
    uint32_t * words = (uint32_t*)gBuffer;
-   char* wordsHG = (char*)fifoHG;
-   char* wordsLG = (char*)fifoLG;
+   uint32_t* wordsHG = (uint32_t*)dataHG;
+   uint32_t* wordsLG = (uint32_t*)dataLG;
 
    gettimeofday(&te,NULL);
    long long etime = (long long)(te.tv_sec)*1000+(int)te.tv_usec/1000;

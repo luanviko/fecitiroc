@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <fstream>
+#include <iostream>
 #include <string>
 #include "ftd2xx.h"
 #include "LALUsb.h"
@@ -45,8 +47,8 @@ bool CITIROC_writeASIC(const int CITIROC_usbID, std::vector<int> asicVector, con
 bool CITIROC_convertToBits(int n, const int numberOfBits, int* binary);
 bool CITIROC_readWord(const int CITIROC_usbID, const char subAddress, char* word, const int wordCount);
 bool CITIROC_readString(const int CITIROC_usbID, const char subAddress, std::string* wordString);
-int  CITIROC_readFIFO(const int CITIROC_usbID, char* fifoHG, char* fifoLG);
-bool  CITIROC_readFIFO_fixedAcqNumber(const int CITIROC_usbID, char* fifoHG, char* fifoLG);
+int  CITIROC_readFIFO(const int CITIROC_usbID, int* dataLG, int* dataHG, int* totalHits, int run_number);
+bool CITIROC_readFIFO_fixedAcqNumber(const int CITIROC_usbID, char* fifoHG, char* fifoLG);
 bool CITIROC_printWord(char subAddress, char word, int wordCount);
 bool CITIROC_readFPGASubAddress(const int usbId, const char subAddress);
 bool CITIROC_sendFirmwareSettings(const int CITIROC_usbId);

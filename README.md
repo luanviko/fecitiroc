@@ -130,6 +130,5 @@ please connect a probe to the `T<n>` pins to verify the signal.
 <!-- `CITIROC_sendWord(... 43, "10000000")` -->
 <!-- `CITIROC_sendWord(... 45, "") -->
 
-# Running fecitiroc 
 
 
